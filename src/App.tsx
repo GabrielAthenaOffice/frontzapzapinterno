@@ -73,21 +73,30 @@ const ChatCorporativoContent = () => {
     if (chatAtivo && wsConnectedRef.current) {
       console.log('📡 Inscrevendo no chat:', chatAtivo.id);
       websocketService.subscribeToChat(chatAtivo.id, (novaMensagem) => {
+        if (!user) return;
+
+        const mensagemComLida: Mensagem = {
+          ...novaMensagem,
+          lida: !!novaMensagem.lida, // undefined => false
+        };
+
         setMensagens(prev => {
-          if (prev.some(m => m.id === novaMensagem.id)) {
+          if (prev.some(m => m.id === mensagemComLida.id)) {
             return prev;
           }
-          return [...prev, novaMensagem];
+          return [...prev, mensagemComLida];
         });
 
         setChats(prev => prev.map(chat => 
           chat.id === chatAtivo.id
             ? { 
                 ...chat, 
-                ultimaMensagem: novaMensagem.conteudo,
-                ultimoConteudo: novaMensagem.conteudo,
-                horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
-                ultimaMensagemEm: novaMensagem.enviadoEm
+                ultimaMensagem: mensagemComLida.conteudo,
+                ultimoConteudo: mensagemComLida.conteudo,
+                horaUltimaMensagem: formatMessageTime(mensagemComLida.enviadoEm),
+                ultimaMensagemEm: mensagemComLida.enviadoEm,
+                // se o chat está aberto, faz sentido manter 0 não lidas mesmo
+                quantidadeNaoLidas: 0,
               }
             : chat
         ));
@@ -173,12 +182,22 @@ const ChatCorporativoContent = () => {
       const mensagensData = await mensagemService.listarMensagens(chat.id);
       setMensagens(mensagensData);
 
+      // zera badge desse chat localmente
+      setChats(prev =>
+        prev.map(c =>
+          c.id === chat.id
+            ? { ...c, quantidadeNaoLidas: 0 }
+            : c
+        )
+      );
+
       if (chat.tipo === 'GRUPO' && chat.groupId) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
         setGroupIdSettings(chat.groupId);
 
         setIsGroupCreator(true);
       }
+
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
       setError('Erro ao carregar mensagens');
