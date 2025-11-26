@@ -1,12 +1,13 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { chatService, mensagemService, userService } from './services/api';
+import { chatService, mensagemService, userService, groupService } from './services/api';
 import websocketService from './services/websocket';
 import { Chat, Mensagem, User, ChatListItem } from './types';
 import { formatMessageTime } from './utils/dateFormartter';
 import LoginForm from './components/Auth/LoginForm';
+import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
@@ -21,6 +22,9 @@ const ChatCorporativoContent = () => {
   const [usuariosSelecionados, setUsuariosSelecionados] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [isGroupCreator, setIsGroupCreator] = useState(false);
+  const [groupIdSettings, setGroupIdSettings] = useState<number | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsConnectedRef = useRef(false);
@@ -159,10 +163,26 @@ const ChatCorporativoContent = () => {
   const selecionarChat = async (chat: Chat) => {
     setChatAtivo(chat);
     setLoading(true);
-    
+    setGroupIdSettings(null);
+    setIsGroupCreator(false);
+
     try {
       const mensagensData = await mensagemService.listarMensagens(chat.id);
       setMensagens(mensagensData);
+
+      // Se for grupo, verificar se é o criador
+      if (chat.tipo === 'GRUPO') {
+        try {
+          const grupoData = await groupService.buscarGrupo(chat.id);
+          setGroupIdSettings(grupoData.id);
+          // Comparar com email do usuário atual (que vem no token)
+          const isCreator = grupoData.criadoPor === user?.nome;
+          setIsGroupCreator(isCreator);
+        } catch (err) {
+          console.error('Erro ao carregar dados do grupo:', err);
+          setIsGroupCreator(false);
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
       setError('Erro ao carregar mensagens');
@@ -431,6 +451,17 @@ const ChatCorporativoContent = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Settings Button for Groups */}
+              {chatAtivo.tipo === 'GRUPO' && (
+                <button
+                  onClick={() => setShowGroupSettings(true)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  title="Configurações do grupo"
+                >
+                  <Settings size={20} className="text-gray-600" />
+                </button>
+              )}
             </div>
 
             {/* Mensagens */}
@@ -628,6 +659,22 @@ const ChatCorporativoContent = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Group Settings Modal */}
+      {chatAtivo && groupIdSettings && (
+        <GroupSettingsModal
+          isOpen={showGroupSettings}
+          onClose={() => setShowGroupSettings(false)}
+          groupId={groupIdSettings}
+          groupName={chatAtivo.nome}
+          currentUserId={user?.id || 0}
+          isCreator={isGroupCreator}
+          onGroupUpdated={() => {
+            carregarDadosIniciais();
+            setShowGroupSettings(false);
+          }}
+        />
       )}
     </div>
   );
