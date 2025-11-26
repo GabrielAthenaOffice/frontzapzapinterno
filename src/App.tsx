@@ -483,13 +483,10 @@ const ChatCorporativoContent = () => {
               ) : (
                 mensagens.map((msg) => {
                   const isOwn = msg.remetenteId === user.id;
-                  
+
                   return (
-                    <div
-                      key={msg.id}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-xs lg:max-w-md`}>
+                    <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                      <div className="max-w-xs lg:max-w-md">
                         {!isOwn && chatAtivo.tipo === 'GRUPO' && (
                           <p className="text-xs text-gray-600 mb-1 px-3">{msg.remetenteNome}</p>
                         )}
@@ -501,9 +498,16 @@ const ChatCorporativoContent = () => {
                           }`}
                         >
                           <p className="break-words">{msg.conteudo}</p>
-                          <p className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
-                            {formatMessageTime(msg.enviadoEm)}
-                          </p>
+                          <div className="flex items-center justify-end gap-2 mt-1">
+                            <p className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
+                              {formatMessageTime(msg.enviadoEm)}
+                            </p>
+                            {isOwn && (
+                              <span className="text-xs">
+                                {msg.lida ? '✓✓' : '✓'}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
