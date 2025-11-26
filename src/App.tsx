@@ -223,19 +223,19 @@ const ChatCorporativoContent = () => {
         const grupoData = await chatService.criarGrupoChat(nomeGrupo, usuariosSelecionados);
         
         // Transformar GroupDTO em Chat
-        const participantesIds = [
-          user!.id,
-          ...usuariosSelecionados.filter(id => id !== user!.id)
-        ];
-        
-        const participantes = usuarios.filter(u => participantesIds.includes(u.id));
+        // O backend retorna os membros do grupo, convertemos para User[]
+        const participantes: User[] = grupoData.membros.map((membro: any) => ({
+          id: membro.id,
+          nome: membro.nome,
+          email: membro.email
+        }));
         
         novoChat = {
           id: grupoData.id,
           nome: grupoData.nome,
-          tipo: 'GRUPO',
+          tipo: 'GRUPO' as const,
           participantes: participantes,
-          criadoEm: new Date().toISOString()
+          criadoEm: grupoData.criadoEm
         };
       }
 
