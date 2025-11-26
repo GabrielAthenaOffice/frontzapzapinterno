@@ -10,7 +10,6 @@ export interface Chat {
   tipo: 'PRIVADO' | 'GRUPO';
   participantes: User[];
   criadoEm: string;
-  groupId?: number; // ID do grupo se for chat de grupo
 }
 
 export interface Mensagem {

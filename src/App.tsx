@@ -130,12 +130,10 @@ const ChatCorporativoContent = () => {
       console.log('✅ Dados carregados com sucesso');
       console.log('📝 Total de chats:', chatsData.length);
       console.log('👥 Total de usuários:', usuariosData.length);
-      console.log('📋 Dados brutos dos chats:', chatsData);
 
       // Transformar chats para ChatListItem com informações do ChatResumoDTO
-      const chatsComInfo: ChatListItem[] = chatsData.map((chat: any) => ({
+      const chatsComInfo: ChatListItem[] = chatsData.map(chat => ({
         ...chat,
-        groupId: chat.groupId || (chat.tipo === 'GRUPO' ? chat.id : undefined),
         ultimaMensagem: chat.ultimoConteudo || 'Clique para ver mensagens',
         horaUltimaMensagem: chat.ultimaMensagemEm 
           ? formatMessageTime(chat.ultimaMensagemEm)
@@ -175,27 +173,16 @@ const ChatCorporativoContent = () => {
       // Se for grupo, verificar se é o criador
       if (chat.tipo === 'GRUPO') {
         try {
-          console.log('🔍 Chat selecionado:', chat);
-          console.log('🔍 Chat ID:', chat.id);
-          console.log('🔍 Group ID:', chat.groupId);
-
-          // Usar groupId se disponível, caso contrário usar chat.id
-          const groupIdToUse = chat.groupId || chat.id;
-          console.log('📌 Tentando buscar grupo com ID:', groupIdToUse);
-
-          const grupoData = await groupService.buscarGrupo(groupIdToUse);
-          console.log('✅ Dados do grupo carregados:', grupoData);
-          
+          console.log('🔍 Buscando grupo com ID:', chat.id);
+          const grupoData = await groupService.buscarGrupo(chat.id);
+          console.log('✅ Dados do grupo retornados:', grupoData);
           setGroupIdSettings(grupoData.id);
           // Comparar com nome do usuário atual
           const isCreator = grupoData.criadoPor === user?.nome;
-          console.log('👤 Usuário atual:', user?.nome);
-          console.log('👤 Criador do grupo:', grupoData.criadoPor);
-          console.log('👤 É criador?', isCreator);
-          
+          console.log('👤 Verificando criador:', { criadoPor: grupoData.criadoPor, usuarioAtual: user?.nome, isCreator });
           setIsGroupCreator(isCreator);
-        } catch (err) {
-          console.error('❌ Erro ao carregar dados do grupo:', err);
+        } catch (err: any) {
+          console.error('❌ Erro ao carregar dados do grupo:', err?.response?.data || err?.message || err);
           setIsGroupCreator(false);
         }
       }
@@ -471,12 +458,7 @@ const ChatCorporativoContent = () => {
               {/* Settings Button for Groups */}
               {chatAtivo.tipo === 'GRUPO' && (
                 <button
-                  onClick={() => {
-                    console.log('🔧 Clicou no botão de settings');
-                    console.log('showGroupSettings anterior:', showGroupSettings);
-                    console.log('groupIdSettings:', groupIdSettings);
-                    setShowGroupSettings(true);
-                  }}
+                  onClick={() => setShowGroupSettings(true)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Configurações do grupo"
                 >
