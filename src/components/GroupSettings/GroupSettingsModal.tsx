@@ -29,6 +29,9 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [newName, setNewName] = useState(groupName);
   const [newDescription, setNewDescription] = useState('');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'remove' | 'delete' | null>(null);
+  const [confirmUserId, setConfirmUserId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,14 +42,23 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   const carregarDadosGrupo = async () => {
     try {
       setLoading(true);
-      const [grupo, usuarios] = await Promise.all([
-        groupService.buscarGrupo(groupId),
-        groupService.listarUsuariosDisponiveis(groupId)
-      ]);
-      setGroupData(grupo);
+      console.log('📋 Carregando dados do grupo:', { groupId, groupName });
+      
+      // Carrega usuários disponíveis usando o groupId correto
+      const usuarios = await groupService.listarUsuariosDisponiveis(groupId);
+      console.log('✅ Usuários disponíveis carregados:', usuarios);
       setUsuariosDisponiveis(usuarios);
-      setNewName(grupo.nome);
-      setNewDescription(grupo.descricao || '');
+      
+      // Os dados do grupo vêm via props (groupName, isCreator)
+      setGroupData({
+        id: groupId,
+        nome: groupName,
+        descricao: '',
+        criadoPor: '',
+        membros: []
+      });
+      
+      console.log('✅ Dados do grupo carregados com sucesso');
     } catch (err) {
       console.error('Erro ao carregar dados do grupo:', err);
       setError('Erro ao carregar dados do grupo');
@@ -71,20 +83,9 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   };
 
   const handleRemoverUsuario = async (userId: number) => {
-    if (confirm('Tem certeza que deseja remover este usuário?')) {
-      try {
-        setLoading(true);
-        await groupService.removerUsuario(groupId, userId);
-        await carregarDadosGrupo();
-        onGroupUpdated();
-        setError(null);
-      } catch (err) {
-        console.error('Erro ao remover usuário:', err);
-        setError('Erro ao remover usuário do grupo');
-      } finally {
-        setLoading(false);
-      }
-    }
+    setConfirmAction('remove');
+    setConfirmUserId(userId);
+    setShowConfirmDialog(true);
   };
 
   const handleAtualizarGrupo = async () => {
@@ -106,19 +107,8 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   };
 
   const handleDeletarGrupo = async () => {
-    if (confirm('Tem certeza que deseja deletar este grupo? Esta ação não pode ser desfeita.')) {
-      try {
-        setLoading(true);
-        await groupService.deletarGrupo(groupId);
-        onGroupUpdated();
-        onClose();
-      } catch (err) {
-        console.error('Erro ao deletar grupo:', err);
-        setError('Erro ao deletar grupo');
-      } finally {
-        setLoading(false);
-      }
-    }
+    setConfirmAction('delete');
+    setShowConfirmDialog(true);
   };
 
   if (!isOpen) return null;
@@ -370,6 +360,73 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm">
+            <h3 className="text-lg font-bold text-gray-800 mb-4">
+              {confirmAction === 'remove' ? 'Remover Participante' : 'Deletar Grupo'}
+            </h3>
+            
+            <p className="text-gray-600 mb-6">
+              {confirmAction === 'remove' 
+                ? 'Tem certeza que deseja remover este usuário do grupo?'
+                : 'Tem certeza que deseja deletar este grupo? Esta ação não pode ser desfeita e todos os dados serão perdidos.'
+              }
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirmDialog(false);
+                  setConfirmAction(null);
+                  setConfirmUserId(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold text-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    if (confirmAction === 'remove' && confirmUserId) {
+                      await groupService.removerUsuario(groupId, confirmUserId);
+                    } else if (confirmAction === 'delete') {
+                      await groupService.deletarGrupo(groupId);
+                      onGroupUpdated();
+                      onClose();
+                      return;
+                    }
+                    await carregarDadosGrupo();
+                    onGroupUpdated();
+                    setError(null);
+                  } catch (err: any) {
+                    console.error('Erro ao executar ação:', err);
+                    setError(confirmAction === 'remove' 
+                      ? 'Erro ao remover usuário do grupo' 
+                      : 'Erro ao deletar grupo');
+                  } finally {
+                    setLoading(false);
+                    setShowConfirmDialog(false);
+                    setConfirmAction(null);
+                    setConfirmUserId(null);
+                  }
+                }}
+                disabled={loading}
+                className={`flex-1 px-4 py-2 rounded-lg text-white font-semibold transition-colors ${
+                  confirmAction === 'remove'
+                    ? 'bg-red-600 hover:bg-red-700 disabled:bg-gray-300'
+                    : 'bg-red-600 hover:bg-red-700 disabled:bg-gray-300'
+                }`}
+              >
+                {loading ? 'Processando...' : confirmAction === 'remove' ? 'Remover' : 'Deletar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

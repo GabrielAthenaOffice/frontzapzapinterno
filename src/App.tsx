@@ -161,6 +161,14 @@ const ChatCorporativoContent = () => {
   };
 
   const selecionarChat = async (chat: Chat) => {
+    console.log('=== CHAT SELECIONADO ===');
+    console.log('chat.id:', chat.id);
+    console.log('chat.nome:', chat.nome);
+    console.log('chat.tipo:', chat.tipo);
+    console.log('chat.participantes:', chat.participantes);
+    console.log('Objeto completo do chat:', chat);
+    console.log('========================');
+    
     setChatAtivo(chat);
     setLoading(true);
     setGroupIdSettings(null);
@@ -170,21 +178,12 @@ const ChatCorporativoContent = () => {
       const mensagensData = await mensagemService.listarMensagens(chat.id);
       setMensagens(mensagensData);
 
-      // Se for grupo, verificar se é o criador
-      if (chat.tipo === 'GRUPO') {
-        try {
-          console.log('🔍 Buscando grupo com ID:', chat.id);
-          const grupoData = await groupService.buscarGrupo(chat.id);
-          console.log('✅ Dados do grupo retornados:', grupoData);
-          setGroupIdSettings(grupoData.id);
-          // Comparar com nome do usuário atual
-          const isCreator = grupoData.criadoPor === user?.nome;
-          console.log('👤 Verificando criador:', { criadoPor: grupoData.criadoPor, usuarioAtual: user?.nome, isCreator });
-          setIsGroupCreator(isCreator);
-        } catch (err: any) {
-          console.error('❌ Erro ao carregar dados do grupo:', err?.response?.data || err?.message || err);
-          setIsGroupCreator(false);
-        }
+      // Se for grupo, usar o groupId
+      if (chat.tipo === 'GRUPO' && chat.groupId) {
+        console.log('✅ Grupo identificado com groupId:', chat.groupId);
+        setGroupIdSettings(chat.groupId);
+        // TODO: Verificar se é criador do grupo quando backend retornar essa info
+        setIsGroupCreator(true); // Por enquanto, assumir que é criador
       }
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
