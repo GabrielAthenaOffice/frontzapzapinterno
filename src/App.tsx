@@ -220,7 +220,23 @@ const ChatCorporativoContent = () => {
         
         // Os usuariosIds devem conter os IDs dos usuários selecionados
         // O backend adiciona o criador automaticamente
-        novoChat = await chatService.criarGrupoChat(nomeGrupo, usuariosSelecionados);
+        const grupoData = await chatService.criarGrupoChat(nomeGrupo, usuariosSelecionados);
+        
+        // Transformar GroupDTO em Chat
+        const participantesIds = [
+          user!.id,
+          ...usuariosSelecionados.filter(id => id !== user!.id)
+        ];
+        
+        const participantes = usuarios.filter(u => participantesIds.includes(u.id));
+        
+        novoChat = {
+          id: grupoData.id,
+          nome: grupoData.nome,
+          tipo: 'GRUPO',
+          participantes: participantes,
+          criadoEm: new Date().toISOString()
+        };
       }
 
       setChats(prev => [

@@ -91,7 +91,7 @@ export const chatService = {
   },
 
   criarGrupoChat: async (nome: string, usuariosIds: number[]) => {
-    const response = await api.post<Chat>('/api/grupos', {
+    const response = await api.post<any>('/api/grupos', {
       nome,
       descricao: '', // Descrição vazia por padrão
       usuariosIds // 🔑 Lista de IDs dos usuários
