@@ -80,7 +80,13 @@ const ChatCorporativoContent = () => {
         // Atualizar última mensagem na lista
         setChats(prev => prev.map(chat => 
           chat.id === chatAtivo.id
-            ? { ...chat, ultimaMensagem: novaMensagem.conteudo, horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm) }
+            ? { 
+                ...chat, 
+                ultimaMensagem: novaMensagem.conteudo,
+                ultimoConteudo: novaMensagem.conteudo,
+                horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
+                ultimaMensagemEm: novaMensagem.enviadoEm
+              }
             : chat
         ));
       });
@@ -111,9 +117,9 @@ const ChatCorporativoContent = () => {
       console.log('📊 Iniciando carregamento de dados iniciais...');
       setLoading(true);
       
-      // Carregar chats e usuários em paralelo
+      // Carregar apenas os chats do usuário autenticado e todos os usuários
       const [chatsData, usuariosData] = await Promise.all([
-        chatService.listarTodosChats(),
+        chatService.listarMeusChats(),
         userService.listarUsuarios()
       ]);
 
@@ -121,11 +127,13 @@ const ChatCorporativoContent = () => {
       console.log('📝 Total de chats:', chatsData.length);
       console.log('👥 Total de usuários:', usuariosData.length);
 
-      // Transformar chats para ChatListItem
+      // Transformar chats para ChatListItem com informações do ChatResumoDTO
       const chatsComInfo: ChatListItem[] = chatsData.map(chat => ({
         ...chat,
-        ultimaMensagem: 'Clique para ver mensagens',
-        horaUltimaMensagem: formatMessageTime(chat.criadoEm)
+        ultimaMensagem: chat.ultimoConteudo || 'Clique para ver mensagens',
+        horaUltimaMensagem: chat.ultimaMensagemEm 
+          ? formatMessageTime(chat.ultimaMensagemEm)
+          : 'Agora'
       }));
 
       setChats(chatsComInfo);
@@ -176,20 +184,9 @@ const ChatCorporativoContent = () => {
     // Enviar via WebSocket
     if (wsConnectedRef.current) {
       websocketService.sendMessage(chatAtivo.id, mensagemDTO);
-      
-      // Adicionar otimisticamente na UI
-      const mensagemTemp: Mensagem = {
-        id: Date.now(),
-        chatId: chatAtivo.id,
-        remetenteId: user.id,
-        remetenteNome: user.nome,
-        conteudo: novaMensagem,
-        enviadoEm: new Date().toISOString(),
-        lida: false
-      };
-      
-      setMensagens(prev => [...prev, mensagemTemp]);
       setNovaMensagem('');
+      // ✅ NÃO adicionar otimisticamente - deixar o servidor retornar
+      // A mensagem chegará via subscription ao tópico
     } else {
       setError('WebSocket desconectado. Tentando reconectar...');
       conectarWebSocket();
@@ -211,12 +208,18 @@ const ChatCorporativoContent = () => {
         novoChat = await chatService.criarChatPrivado(usuariosSelecionados[0]);
       } else {
         // Criar grupo com múltiplos usuários
-        // Você precisará criar este método no seu backend
+        // O backend adiciona automaticamente o criador (usuário autenticado)
         const nomesUsuarios = usuariosSelecionados
           .map(id => usuarios.find(u => u.id === id)?.nome || 'Usuário')
           .join(', ');
         
-        const nomeGrupo = `Grupo: ${nomesUsuarios}`;
+        // Se houver outros usuários além dos selecionados, incluir o criador no nome
+        const nomeGrupo = user 
+          ? `${user.nome}, ${nomesUsuarios}`
+          : nomesUsuarios;
+        
+        // Os usuariosIds devem conter os IDs dos usuários selecionados
+        // O backend adiciona o criador automaticamente
         novoChat = await chatService.criarGrupoChat(nomeGrupo, usuariosSelecionados);
       }
 
@@ -224,7 +227,10 @@ const ChatCorporativoContent = () => {
         {
           ...novoChat,
           ultimaMensagem: 'Nova conversa',
-          horaUltimaMensagem: formatMessageTime(novoChat.criadoEm)
+          horaUltimaMensagem: 'Agora',
+          ultimoConteudo: 'Nova conversa',
+          ultimaMensagemEm: new Date().toISOString(),
+          quantidadeNaoLidas: 0
         },
         ...prev
       ]);
@@ -335,17 +341,26 @@ const ChatCorporativoContent = () => {
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 relative">
                     {chat.tipo === 'GRUPO' ? (
                       <Users size={20} />
                     ) : (
                       chat.nome.charAt(0).toUpperCase()
                     )}
+                    {/* Badge de não lidas */}
+                    {chat.quantidadeNaoLidas && chat.quantidadeNaoLidas > 0 && (
+                      <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                        {chat.quantidadeNaoLidas > 99 ? '99+' : chat.quantidadeNaoLidas}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
-                      <p className="font-semibold text-gray-800 truncate">{chat.nome}</p>
+                      {/* Para privado, mostra o nome do outro usuário; para grupo, mostra o nome do grupo */}
+                      <p className="font-semibold text-gray-800 truncate">
+                        {chat.tipo === 'PRIVADO' ? (chat.outroUsuario || chat.nome) : chat.nome}
+                      </p>
                       <span className="text-xs text-gray-500 flex-shrink-0 ml-2">
                         {chat.horaUltimaMensagem}
                       </span>

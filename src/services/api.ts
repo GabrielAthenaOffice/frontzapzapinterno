@@ -74,12 +74,7 @@ export const authService = {
 // ===== CHAT ENDPOINTS =====
 export const chatService = {
   listarMeusChats: async () => {
-    const response = await api.get<Chat[]>('/api/chats/meus-chats');
-    return response.data;
-  },
-
-  listarTodosChats: async () => {
-    const response = await api.get<Chat[]>('/api/chats');
+    const response = await api.get<any[]>('/api/chats/meus-chats');
     return response.data;
   },
 
@@ -96,9 +91,10 @@ export const chatService = {
   },
 
   criarGrupoChat: async (nome: string, usuariosIds: number[]) => {
-    const response = await api.post<Chat>('/api/chats/grupo', {
+    const response = await api.post<Chat>('/api/grupos', {
       nome,
-      usuariosIds
+      descricao: '', // Descrição vazia por padrão
+      usuariosIds // 🔑 Lista de IDs dos usuários
     });
     return response.data;
   }

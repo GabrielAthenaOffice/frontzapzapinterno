@@ -30,4 +30,8 @@ export interface LoginData {
 export interface ChatListItem extends Chat {
   ultimaMensagem?: string;
   horaUltimaMensagem?: string;
+  ultimoConteudo?: string; // Do ChatResumoDTO
+  ultimaMensagemEm?: string; // Do ChatResumoDTO
+  outroUsuario?: string; // Do ChatResumoDTO - nome do outro usuário em chat privado
+  quantidadeNaoLidas?: number; // Do ChatResumoDTO - quantidade de mensagens não lidas
 }
