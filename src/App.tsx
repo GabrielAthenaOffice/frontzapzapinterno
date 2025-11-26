@@ -14,6 +14,8 @@ const ChatCorporativoContent = () => {
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [chatAtivo, setChatAtivo] = useState<Chat | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
+  const [mensagensPage, setMensagensPage] = useState(0);
+  const [mensagensHasMore, setMensagensHasMore] = useState(true);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
@@ -25,6 +27,8 @@ const ChatCorporativoContent = () => {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [isGroupCreator, setIsGroupCreator] = useState(false);
   const [groupIdSettings, setGroupIdSettings] = useState<number | null>(null);
+  const PAGE_SIZE = 100; // Número de mensagens por página
+  
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsConnectedRef = useRef(false);
@@ -178,9 +182,16 @@ const ChatCorporativoContent = () => {
     setGroupIdSettings(null);
     setIsGroupCreator(false);
 
+    // reset de paginação de mensagens
+    setMensagens([]);
+    setMensagensPage(0);
+    setMensagensHasMore(true);
+
     try {
-      const mensagensData = await mensagemService.listarMensagens(chat.id);
+      const mensagensData = await mensagemService.listarMensagens(chat.id, 0, PAGE_SIZE);
       setMensagens(mensagensData);
+      setMensagensPage(0);
+      setMensagensHasMore(mensagensData.length === PAGE_SIZE);
 
       // zera badge desse chat localmente
       setChats(prev =>
