@@ -22,6 +22,8 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   isCreator,
   onGroupUpdated
 }) => {
+  console.log('📋 GroupSettingsModal renderizado com props:', { isOpen, groupId, groupName, isCreator });
+  
   const [activeTab, setActiveTab] = useState<'info' | 'members' | 'settings'>('info');
   const [groupData, setGroupData] = useState<any>(null);
   const [usuariosDisponiveis, setUsuariosDisponiveis] = useState<User[]>([]);

@@ -471,7 +471,12 @@ const ChatCorporativoContent = () => {
               {/* Settings Button for Groups */}
               {chatAtivo.tipo === 'GRUPO' && (
                 <button
-                  onClick={() => setShowGroupSettings(true)}
+                  onClick={() => {
+                    console.log('🔧 Clicou no botão de settings');
+                    console.log('showGroupSettings anterior:', showGroupSettings);
+                    console.log('groupIdSettings:', groupIdSettings);
+                    setShowGroupSettings(true);
+                  }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Configurações do grupo"
                 >
