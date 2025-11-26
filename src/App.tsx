@@ -68,20 +68,18 @@ const ChatCorporativoContent = () => {
     }
   }, [user]);
 
-  // Inscrever no chat ativo
+  
   useEffect(() => {
     if (chatAtivo && wsConnectedRef.current) {
       console.log('📡 Inscrevendo no chat:', chatAtivo.id);
       websocketService.subscribeToChat(chatAtivo.id, (novaMensagem) => {
         setMensagens(prev => {
-          // Evitar duplicatas
           if (prev.some(m => m.id === novaMensagem.id)) {
             return prev;
           }
           return [...prev, novaMensagem];
         });
 
-        // Atualizar última mensagem na lista
         setChats(prev => prev.map(chat => 
           chat.id === chatAtivo.id
             ? { 
@@ -121,7 +119,6 @@ const ChatCorporativoContent = () => {
       console.log('📊 Iniciando carregamento de dados iniciais...');
       setLoading(true);
       
-      // Carregar apenas os chats do usuário autenticado e todos os usuários
       const [chatsData, usuariosData] = await Promise.all([
         chatService.listarMeusChats(),
         userService.listarUsuarios()
@@ -131,7 +128,6 @@ const ChatCorporativoContent = () => {
       console.log('📝 Total de chats:', chatsData.length);
       console.log('👥 Total de usuários:', usuariosData.length);
 
-      // Transformar chats para ChatListItem com informações do ChatResumoDTO
       const chatsComInfo: ChatListItem[] = chatsData.map(chat => ({
         ...chat,
         ultimaMensagem: chat.ultimoConteudo || 'Clique para ver mensagens',
@@ -147,8 +143,7 @@ const ChatCorporativoContent = () => {
     } catch (error: any) {
       console.error('❌ Erro ao carregar dados:', error);
       setLoading(false);
-      
-      // Se for erro 403/401, a sessão expirou
+
       if (error.response?.status === 401 || error.response?.status === 403) {
         console.warn('⚠️ Sessão expirada! Fazendo logout...');
         await logout();
@@ -178,12 +173,11 @@ const ChatCorporativoContent = () => {
       const mensagensData = await mensagemService.listarMensagens(chat.id);
       setMensagens(mensagensData);
 
-      // Se for grupo, usar o groupId
       if (chat.tipo === 'GRUPO' && chat.groupId) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
         setGroupIdSettings(chat.groupId);
-        // TODO: Verificar se é criador do grupo quando backend retornar essa info
-        setIsGroupCreator(true); // Por enquanto, assumir que é criador
+
+        setIsGroupCreator(true);
       }
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
@@ -253,7 +247,8 @@ const ChatCorporativoContent = () => {
         }));
         
         novoChat = {
-          id: grupoData.id,
+          id: grupoData.chatId,
+          groupId: grupoData.id,
           nome: grupoData.nome,
           tipo: 'GRUPO' as const,
           participantes: participantes,
@@ -457,7 +452,12 @@ const ChatCorporativoContent = () => {
               {/* Settings Button for Groups */}
               {chatAtivo.tipo === 'GRUPO' && (
                 <button
-                  onClick={() => setShowGroupSettings(true)}
+                  onClick={() => {
+                    console.log('🔧 Clicou no botão de settings');
+                    console.log('groupIdSettings:', groupIdSettings);
+                    console.log('chatAtivo.groupId:', chatAtivo.groupId);
+                    setShowGroupSettings(true);
+                  }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Configurações do grupo"
                 >
@@ -665,18 +665,21 @@ const ChatCorporativoContent = () => {
 
       {/* Group Settings Modal */}
       {chatAtivo && groupIdSettings && (
-        <GroupSettingsModal
-          isOpen={showGroupSettings}
-          onClose={() => setShowGroupSettings(false)}
-          groupId={groupIdSettings}
-          groupName={chatAtivo.nome}
-          currentUserId={user?.id || 0}
-          isCreator={isGroupCreator}
-          onGroupUpdated={() => {
-            carregarDadosIniciais();
-            setShowGroupSettings(false);
-          }}
-        />
+        <>
+          {console.log('📋 Renderizando modal. showGroupSettings:', showGroupSettings, 'groupIdSettings:', groupIdSettings)}
+          <GroupSettingsModal
+            isOpen={showGroupSettings}
+            onClose={() => setShowGroupSettings(false)}
+            groupId={groupIdSettings}
+            groupName={chatAtivo.nome}
+            currentUserId={user?.id || 0}
+            isCreator={isGroupCreator}
+            onGroupUpdated={() => {
+              carregarDadosIniciais();
+              setShowGroupSettings(false);
+            }}
+          />
+        </>
       )}
     </div>
   );

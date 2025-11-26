@@ -41,31 +41,33 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
 
   const carregarDadosGrupo = async () => {
     try {
-      setLoading(true);
-      console.log('📋 Carregando dados do grupo:', { groupId, groupName });
-      
-      // Carrega usuários disponíveis usando o groupId correto
-      const usuarios = await groupService.listarUsuariosDisponiveis(groupId);
-      console.log('✅ Usuários disponíveis carregados:', usuarios);
-      setUsuariosDisponiveis(usuarios);
-      
-      // Os dados do grupo vêm via props (groupName, isCreator)
-      setGroupData({
-        id: groupId,
-        nome: groupName,
-        descricao: '',
-        criadoPor: '',
-        membros: []
-      });
-      
-      console.log('✅ Dados do grupo carregados com sucesso');
+        setLoading(true);
+        console.log('📋 Carregando dados do grupo:', { groupId, groupName });
+
+        // 1) Busca detalhes completos do grupo (nome, descrição, criadoPor, membros)
+        const grupo = await groupService.buscarGrupo(groupId); // GroupDTO
+
+        console.log('✅ Grupo carregado:', grupo);
+        setGroupData(grupo);
+
+        // 2) Atualiza campos do formulário de edição
+        setNewName(grupo.nome);
+        setNewDescription(grupo.descricao || '');
+
+        // 3) Busca usuários disponíveis usando o groupId correto
+        const usuarios = await groupService.listarUsuariosDisponiveis(groupId);
+        console.log('✅ Usuários disponíveis carregados:', usuarios);
+        setUsuariosDisponiveis(usuarios);
+
+        setError(null);
     } catch (err) {
-      console.error('Erro ao carregar dados do grupo:', err);
-      setError('Erro ao carregar dados do grupo');
+        console.error('Erro ao carregar dados do grupo:', err);
+        setError('Erro ao carregar dados do grupo');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+    };
+
 
   const handleAdicionarUsuario = async (userId: number) => {
     try {
@@ -90,21 +92,22 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
 
   const handleAtualizarGrupo = async () => {
     try {
-      setLoading(true);
-      await groupService.atualizarGrupo(groupId, {
+        setLoading(true);
+        await groupService.atualizarGrupo(groupId, {
         nome: newName,
         descricao: newDescription
-      });
-      await carregarDadosGrupo();
-      onGroupUpdated();
-      setError(null);
+        });
+        await carregarDadosGrupo();
+        onGroupUpdated();             
+        setError(null);
     } catch (err) {
-      console.error('Erro ao atualizar grupo:', err);
-      setError('Erro ao atualizar grupo');
+        console.error('Erro ao atualizar grupo:', err);
+        setError('Erro ao atualizar grupo');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+    };
+
 
   const handleDeletarGrupo = async () => {
     setConfirmAction('delete');
