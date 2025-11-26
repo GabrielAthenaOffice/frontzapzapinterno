@@ -138,13 +138,38 @@ export const groupService = {
     return response.data;
   },
 
+  buscarGrupo: async (groupId: number) => {
+    const response = await api.get(`/api/grupos/${groupId}`);
+    return response.data;
+  },
+
   criarGrupo: async (data: any) => {
     const response = await api.post('/api/grupos', data);
     return response.data;
   },
 
+  atualizarGrupo: async (groupId: number, data: any) => {
+    const response = await api.put(`/api/grupos/${groupId}`, data);
+    return response.data;
+  },
+
+  listarUsuariosDisponiveis: async (groupId: number) => {
+    const response = await api.get(`/api/grupos/${groupId}/usuarios-disponiveis`);
+    return response.data;
+  },
+
   adicionarUsuario: async (groupId: number, userId: number) => {
     const response = await api.post(`/api/grupos/${groupId}/usuarios/${userId}`);
+    return response.data;
+  },
+
+  removerUsuario: async (groupId: number, userId: number) => {
+    const response = await api.delete(`/api/grupos/${groupId}/usuarios/${userId}`);
+    return response.data;
+  },
+
+  deletarGrupo: async (groupId: number) => {
+    const response = await api.delete(`/api/grupos/${groupId}`);
     return response.data;
   }
 };
