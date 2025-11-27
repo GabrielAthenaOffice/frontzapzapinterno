@@ -25,10 +25,21 @@ const ChatCorporativoContent = () => {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [isGroupCreator, setIsGroupCreator] = useState(false);
   const [groupIdSettings, setGroupIdSettings] = useState<number | null>(null);
+  
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mensagensContainerRef = useRef<HTMLDivElement | null>(null);
   const wsConnectedRef = useRef(false);
   const carregandoDadosRef = useRef(false);
+
+  const PAGE_SIZE = 20;
+
+  const [mensagensPage, setMensagensPage] = useState(0);
+  const [mensagensHasMore, setMensagensHasMore] = useState(true);
+  const [loadingMais, setLoadingMais] = useState(false);
+
+
+  
 
   // Monitorar mudanças no usuário (apenas para debug)
   useEffect(() => {
@@ -39,10 +50,6 @@ const ChatCorporativoContent = () => {
     }
   }, [user, authLoading]);
 
-  // Scroll automático
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [mensagens]);
 
   // Conectar WebSocket quando usuário logado
   useEffect(() => {
@@ -72,25 +79,64 @@ const ChatCorporativoContent = () => {
   useEffect(() => {
     if (chatAtivo && wsConnectedRef.current) {
       console.log('📡 Inscrevendo no chat:', chatAtivo.id);
+
       websocketService.subscribeToChat(chatAtivo.id, (novaMensagem) => {
-        setMensagens(prev => {
-          if (prev.some(m => m.id === novaMensagem.id)) {
+        if (!user) return;
+
+        const isOwn = novaMensagem.remetenteId === user.id;
+
+        // garante lida = true pro remetente
+        const mensagemComLida: Mensagem = {
+          ...novaMensagem,
+          lida: isOwn || !!novaMensagem.lida,
+        };
+
+        // adiciona no array de mensagens e rola pro fim
+        setMensagens((prev) => {
+          if (prev.some((m) => m.id === mensagemComLida.id)) {
             return prev;
           }
-          return [...prev, novaMensagem];
+
+          const updated = [...prev, mensagemComLida];
+
+          // scroll só quando chega mensagem nova
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }, 0);
+
+          return updated;
         });
 
-        setChats(prev => prev.map(chat => 
-          chat.id === chatAtivo.id
-            ? { 
-                ...chat, 
+        // atualiza lista de chats (sidebar)
+        setChats((prev) =>
+          prev.map((chat) => {
+            if (chat.id !== chatAtivo.id) {
+              // chat NÃO está aberto: se a msg não é minha, soma não lida
+              const novaQtdNaoLidas = !isOwn
+                ? (chat.quantidadeNaoLidas || 0) + 1
+                : chat.quantidadeNaoLidas;
+
+              return {
+                ...chat,
                 ultimaMensagem: novaMensagem.conteudo,
                 ultimoConteudo: novaMensagem.conteudo,
                 horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
-                ultimaMensagemEm: novaMensagem.enviadoEm
-              }
-            : chat
-        ));
+                ultimaMensagemEm: novaMensagem.enviadoEm,
+                quantidadeNaoLidas: novaQtdNaoLidas,
+              };
+            }
+
+            // chat ATIVO: badge zera
+            return {
+              ...chat,
+              ultimaMensagem: novaMensagem.conteudo,
+              ultimoConteudo: novaMensagem.conteudo,
+              horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
+              ultimaMensagemEm: novaMensagem.enviadoEm,
+              quantidadeNaoLidas: 0,
+            };
+          })
+        );
       });
     }
 
@@ -100,7 +146,20 @@ const ChatCorporativoContent = () => {
         websocketService.unsubscribeFromChat(chatAtivo.id);
       }
     };
-  }, [chatAtivo, wsConnectedRef.current]);
+    // importante: depende só do id do chat e do estado da conexão
+  }, [chatAtivo?.id, wsConnectedRef.current, user?.id]);
+
+
+  const handleMensagensScroll = () => {
+    const c = mensagensContainerRef.current;
+    if (!c || loadingMais || !mensagensHasMore) return;
+
+    // chegou perto do topo -> carrega mais
+    if (c.scrollTop <= 50) {
+      carregarMaisMensagens();
+    }
+  };
+
 
   const conectarWebSocket = async () => {
     try {
@@ -170,13 +229,29 @@ const ChatCorporativoContent = () => {
     setIsGroupCreator(false);
 
     try {
-      const mensagensData = await mensagemService.listarMensagens(chat.id);
+      // reset de paginação ao trocar de chat
+      setMensagens([]);
+      setMensagensPage(0);
+      setMensagensHasMore(true);
+
+      const mensagensData = await mensagemService.listarMensagens(
+        chat.id,
+        0,
+        PAGE_SIZE
+      );
+
       setMensagens(mensagensData);
+      setMensagensPage(0);
+      setMensagensHasMore(mensagensData.length === PAGE_SIZE);
+
+      // rolar pro final
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 0);
 
       if (chat.tipo === 'GRUPO' && chat.groupId) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
         setGroupIdSettings(chat.groupId);
-
         setIsGroupCreator(true);
       }
     } catch (error) {
@@ -186,6 +261,46 @@ const ChatCorporativoContent = () => {
       setLoading(false);
     }
   };
+
+  const carregarMaisMensagens = async () => {
+    if (!chatAtivo || !mensagensHasMore || loadingMais) return;
+
+    const container = mensagensContainerRef.current;
+    const oldScrollHeight = container?.scrollHeight ?? 0;
+    const oldScrollTop = container?.scrollTop ?? 0;
+
+    try {
+      setLoadingMais(true);
+      const nextPage = mensagensPage + 1;
+
+      const novas = await mensagemService.listarMensagens(
+        chatAtivo.id,
+        nextPage,
+        PAGE_SIZE
+      );
+
+      // prepend (mais antigas lá em cima)
+      setMensagens(prev => [...novas, ...prev]);
+      setMensagensPage(nextPage);
+      setMensagensHasMore(novas.length === PAGE_SIZE);
+
+      // mantém posição visual
+      setTimeout(() => {
+        const c = mensagensContainerRef.current;
+        if (!c) return;
+
+        const newScrollHeight = c.scrollHeight;
+        const diff = newScrollHeight - oldScrollHeight;
+        c.scrollTop = oldScrollTop + diff;
+      }, 0);
+    } catch (error) {
+      console.error('Erro ao carregar mais mensagens:', error);
+      setError('Erro ao carregar mais mensagens');
+    } finally {
+      setLoadingMais(false);
+    }
+  };
+
 
   const enviarMensagem = () => {
     if (!novaMensagem.trim() || !chatAtivo || !user) return;
@@ -466,7 +581,22 @@ const ChatCorporativoContent = () => {
             </div>
 
             {/* Mensagens */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+            <div
+                ref={mensagensContainerRef}
+                className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+              >
+                {/* Botão de carregar mais (topo) */}
+                {mensagensHasMore && mensagens.length > 0 && (
+                  <div className="flex justify-center mb-4">
+                    <button
+                      onClick={carregarMaisMensagens}
+                      disabled={loadingMais}
+                      className="text-xs px-3 py-1 rounded-full border border-blue-500 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
+                    >
+                      {loadingMais ? 'Carregando...' : 'Carregar mensagens mais antigas'}
+                    </button>
+                  </div>
+                )}
               {loading && mensagens.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>

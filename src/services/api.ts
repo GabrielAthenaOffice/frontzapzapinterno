@@ -102,8 +102,11 @@ export const chatService = {
 
 // ===== MENSAGEM ENDPOINTS =====
 export const mensagemService = {
-  listarMensagens: async (chatId: number) => {
-    const response = await api.get<Mensagem[]>(`/api/mensagens/chat/${chatId}`);
+  listarMensagens: async (chatId: number, page = 0, size = 50) => {
+    const response = await api.get<Mensagem[]>(
+      `/api/mensagens/chat/${chatId}`,
+      { params: { page, size } }
+    );
     return response.data;
   },
 
