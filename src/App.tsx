@@ -427,6 +427,8 @@ const ChatCorporativoContent = () => {
         // O backend adiciona o criador automaticamente
         const grupoData = await chatService.criarGrupoChat(nomeGrupo, usuariosSelecionados);
 
+        console.log('📦 Resposta do backend ao criar grupo:', grupoData);
+
         // Transformar GroupDTO em Chat
         // O backend retorna os membros do grupo, convertemos para User[]
         const participantes: User[] = grupoData.membros.map((membro: any) => ({
@@ -435,12 +437,20 @@ const ChatCorporativoContent = () => {
           email: membro.email
         }));
 
+        // O grupoData deve ter um campo 'chat' ou 'chatId'
+        // Vamos verificar ambos os casos
+        const chatId = grupoData.chat?.id || grupoData.chatId || grupoData.id;
+        const groupId = grupoData.id;
+
+        console.log('🔍 IDs extraídos - chatId:', chatId, 'groupId:', groupId);
+
         novoChat = {
-          id: grupoData.id,
+          id: chatId,
           nome: grupoData.nome,
           tipo: 'GRUPO' as const,
           participantes: participantes,
-          criadoEm: grupoData.criadoEm
+          criadoEm: grupoData.criadoEm,
+          groupId: groupId  // Adiciona o groupId ao objeto
         };
       }
 
