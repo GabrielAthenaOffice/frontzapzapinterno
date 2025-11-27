@@ -298,6 +298,14 @@ const ChatCorporativoContent = () => {
     setGroupIdSettings(null);
     setIsGroupCreator(false);
 
+    // Zera o contador de não lidas localmente
+    setChats(prev => prev.map(c => {
+      if (c.id === chat.id) {
+        return { ...c, quantidadeNaoLidas: 0 };
+      }
+      return c;
+    }));
+
     try {
       // reset de paginação ao trocar de chat
       setMensagens([]);
