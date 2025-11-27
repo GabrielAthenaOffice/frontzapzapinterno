@@ -119,28 +119,40 @@ const ChatCorporativoContent = () => {
           body: notif.conteudoResumo,
           // icon: '/logo192.png' // Pode adicionar um ícone se tiver
         });
+
+        // Tocar som de notificação
+        try {
+          const audio = new Audio('/notification.mp3');
+          audio.play().catch(e => console.log('Erro ao tocar som:', e));
+        } catch (error) {
+          console.error('Erro ao inicializar áudio:', error);
+        }
       }
 
-      setChats((prev) =>
-        prev.map((c) => {
-          if (c.id !== notif.chatId) return c;
+      setChats((prev) => {
+        const chatIndex = prev.findIndex((c) => c.id === notif.chatId);
+        if (chatIndex === -1) return prev;
 
-          const isChatAtivo = chatAtivo && c.id === chatAtivo.id;
+        const chat = prev[chatIndex];
+        const isChatAtivo = chatAtivo && chat.id === chatAtivo.id;
+        const quantidadeNaoLidas = isChatAtivo
+          ? 0
+          : (chat.quantidadeNaoLidas || 0) + 1;
 
-          const quantidadeNaoLidas = isChatAtivo
-            ? 0
-            : (c.quantidadeNaoLidas || 0) + 1;
+        const updatedChat = {
+          ...chat,
+          ultimaMensagem: notif.conteudoResumo,
+          ultimoConteudo: notif.conteudoResumo,
+          horaUltimaMensagem: formatMessageTime(notif.enviadoEm),
+          ultimaMensagemEm: notif.enviadoEm,
+          quantidadeNaoLidas,
+        };
 
-          return {
-            ...c,
-            ultimaMensagem: notif.conteudoResumo,
-            ultimoConteudo: notif.conteudoResumo,
-            horaUltimaMensagem: formatMessageTime(notif.enviadoEm),
-            ultimaMensagemEm: notif.enviadoEm,
-            quantidadeNaoLidas,
-          };
-        })
-      );
+        // Remove o chat da posição atual e coloca no início
+        const newChats = [...prev];
+        newChats.splice(chatIndex, 1);
+        return [updatedChat, ...newChats];
+      });
     });
 
     return () => {
@@ -182,30 +194,31 @@ const ChatCorporativoContent = () => {
         return updated;
       });
 
-      setChats((prev) =>
-        prev.map((c) => {
-          if (c.id !== novaMensagem.chatId) {
-            return c;
-          }
+      setChats((prev) => {
+        const chatIndex = prev.findIndex((c) => c.id === novaMensagem.chatId);
+        if (chatIndex === -1) return prev;
 
-          const isChatAtivo = chatAtivo && c.id === chatAtivo.id;
+        const chat = prev[chatIndex];
+        const isChatAtivo = chatAtivo && chat.id === chatAtivo.id;
+        const quantidadeNaoLidas = isChatAtivo
+          ? 0
+          : !isOwn
+            ? (chat.quantidadeNaoLidas || 0) + 1
+            : chat.quantidadeNaoLidas;
 
-          const quantidadeNaoLidas = isChatAtivo
-            ? 0
-            : !isOwn
-              ? (c.quantidadeNaoLidas || 0) + 1
-              : c.quantidadeNaoLidas;
+        const updatedChat = {
+          ...chat,
+          ultimaMensagem: novaMensagem.conteudo,
+          ultimoConteudo: novaMensagem.conteudo,
+          horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
+          ultimaMensagemEm: novaMensagem.enviadoEm,
+          quantidadeNaoLidas,
+        };
 
-          return {
-            ...c,
-            ultimaMensagem: novaMensagem.conteudo,
-            ultimoConteudo: novaMensagem.conteudo,
-            horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
-            ultimaMensagemEm: novaMensagem.enviadoEm,
-            quantidadeNaoLidas,
-          };
-        })
-      );
+        const newChats = [...prev];
+        newChats.splice(chatIndex, 1);
+        return [updatedChat, ...newChats];
+      });
     });
 
     return () => {
@@ -677,8 +690,8 @@ const ChatCorporativoContent = () => {
                         )}
                         <div
                           className={`rounded-2xl px-4 py-2 ${isOwn
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-white text-gray-800 border border-gray-200'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white text-gray-800 border border-gray-200'
                             }`}
                         >
                           <p className="break-words whitespace-pre-line">{msg.conteudo}</p>
@@ -824,14 +837,14 @@ const ChatCorporativoContent = () => {
                       }
                     }}
                     className={`w-full p-3 rounded-lg flex items-center space-x-3 transition-colors ${usuariosSelecionados.includes(usuario.id)
-                        ? 'bg-blue-50 border-2 border-blue-500'
-                        : 'hover:bg-gray-50 border-2 border-transparent'
+                      ? 'bg-blue-50 border-2 border-blue-500'
+                      : 'hover:bg-gray-50 border-2 border-transparent'
                       }`}
                     disabled={loading}
                   >
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${usuariosSelecionados.includes(usuario.id)
-                        ? 'bg-blue-600'
-                        : 'bg-gradient-to-br from-blue-400 to-purple-500'
+                      ? 'bg-blue-600'
+                      : 'bg-gradient-to-br from-blue-400 to-purple-500'
                       }`}>
                       {usuariosSelecionados.includes(usuario.id) ? (
                         <div className="text-lg">✓</div>
