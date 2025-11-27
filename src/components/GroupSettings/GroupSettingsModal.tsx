@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X, Settings, Plus, Trash2 } from 'lucide-react';
-import { groupService } from '../../services/api';
+import { groupService, chatService } from '../../services/api';
 import { User } from '../../types';
 
 interface GroupSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  chatId: number; // ID do chat para deletar
   groupId: number;
   groupName: string;
   currentUserId: number;
@@ -16,6 +17,7 @@ interface GroupSettingsModalProps {
 const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   isOpen,
   onClose,
+  chatId,
   groupId,
   groupName,
   currentUserId,
@@ -43,21 +45,23 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
     try {
       setLoading(true);
       console.log('📋 Carregando dados do grupo:', { groupId, groupName });
-      
+
       // Carrega usuários disponíveis usando o groupId correto
-      const usuarios = await groupService.listarUsuariosDisponiveis(groupId);
+      const [usuarios, grupoDetalhes] = await Promise.all([
+        groupService.listarUsuariosDisponiveis(groupId),
+        groupService.buscarGrupo(groupId)
+      ]);
+
       console.log('✅ Usuários disponíveis carregados:', usuarios);
+      console.log('✅ Detalhes do grupo carregados:', grupoDetalhes);
+
       setUsuariosDisponiveis(usuarios);
-      
-      // Os dados do grupo vêm via props (groupName, isCreator)
-      setGroupData({
-        id: groupId,
-        nome: groupName,
-        descricao: '',
-        criadoPor: '',
-        membros: []
-      });
-      
+      setGroupData(grupoDetalhes);
+
+      // Atualiza estados de edição
+      setNewName(grupoDetalhes.nome);
+      setNewDescription(grupoDetalhes.descricao || '');
+
       console.log('✅ Dados do grupo carregados com sucesso');
     } catch (err) {
       console.error('Erro ao carregar dados do grupo:', err);
@@ -134,32 +138,29 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
         <div className="flex space-x-2 mb-6 border-b">
           <button
             onClick={() => setActiveTab('info')}
-            className={`px-4 py-2 font-semibold transition-colors ${
-              activeTab === 'info'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`px-4 py-2 font-semibold transition-colors ${activeTab === 'info'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-800'
+              }`}
           >
             Informações
           </button>
           <button
             onClick={() => setActiveTab('members')}
-            className={`px-4 py-2 font-semibold transition-colors ${
-              activeTab === 'members'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`px-4 py-2 font-semibold transition-colors ${activeTab === 'members'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-800'
+              }`}
           >
             Membros
           </button>
           {isCreator && (
             <button
               onClick={() => setActiveTab('settings')}
-              className={`px-4 py-2 font-semibold transition-colors ${
-                activeTab === 'settings'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
+              className={`px-4 py-2 font-semibold transition-colors ${activeTab === 'settings'
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-600 hover:text-gray-800'
+                }`}
             >
               Configurações
             </button>
@@ -368,9 +369,9 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
             <h3 className="text-lg font-bold text-gray-800 mb-4">
               {confirmAction === 'remove' ? 'Remover Participante' : 'Deletar Grupo'}
             </h3>
-            
+
             <p className="text-gray-600 mb-6">
-              {confirmAction === 'remove' 
+              {confirmAction === 'remove'
                 ? 'Tem certeza que deseja remover este usuário do grupo?'
                 : 'Tem certeza que deseja deletar este grupo? Esta ação não pode ser desfeita e todos os dados serão perdidos.'
               }
@@ -394,7 +395,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                     if (confirmAction === 'remove' && confirmUserId) {
                       await groupService.removerUsuario(groupId, confirmUserId);
                     } else if (confirmAction === 'delete') {
-                      await groupService.deletarGrupo(groupId);
+                      await chatService.deletarChat(chatId);
                       onGroupUpdated();
                       onClose();
                       return;
@@ -404,8 +405,8 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                     setError(null);
                   } catch (err: any) {
                     console.error('Erro ao executar ação:', err);
-                    setError(confirmAction === 'remove' 
-                      ? 'Erro ao remover usuário do grupo' 
+                    setError(confirmAction === 'remove'
+                      ? 'Erro ao remover usuário do grupo'
                       : 'Erro ao deletar grupo');
                   } finally {
                     setLoading(false);
@@ -415,11 +416,10 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
                   }
                 }}
                 disabled={loading}
-                className={`flex-1 px-4 py-2 rounded-lg text-white font-semibold transition-colors ${
-                  confirmAction === 'remove'
-                    ? 'bg-red-600 hover:bg-red-700 disabled:bg-gray-300'
-                    : 'bg-red-600 hover:bg-red-700 disabled:bg-gray-300'
-                }`}
+                className={`flex-1 px-4 py-2 rounded-lg text-white font-semibold transition-colors ${confirmAction === 'remove'
+                  ? 'bg-red-600 hover:bg-red-700 disabled:bg-gray-300'
+                  : 'bg-red-600 hover:bg-red-700 disabled:bg-gray-300'
+                  }`}
               >
                 {loading ? 'Processando...' : confirmAction === 'remove' ? 'Remover' : 'Deletar'}
               </button>

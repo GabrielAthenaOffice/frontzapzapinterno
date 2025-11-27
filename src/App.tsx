@@ -888,6 +888,7 @@ const ChatCorporativoContent = () => {
           <GroupSettingsModal
             isOpen={showGroupSettings}
             onClose={() => setShowGroupSettings(false)}
+            chatId={chatAtivo.id}
             groupId={groupIdSettings}
             groupName={chatAtivo.nome}
             currentUserId={user?.id || 0}

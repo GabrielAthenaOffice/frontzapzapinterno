@@ -45,12 +45,12 @@ api.interceptors.response.use(
 export const authService = {
   login: async (data: LoginData) => {
     const response = await api.post<any>('/auth/login', data);
-    
+
     console.log('📦 Resposta completa do login:', response);
     console.log('📦 response.data:', response.data);
     console.log('📦 response.headers:', response.headers);
     console.log('🍪 Cookies após login:', document.cookie);
-    
+
     return response.data;
   },
 
@@ -96,6 +96,11 @@ export const chatService = {
       descricao: '', // Descrição vazia por padrão
       usuariosIds // 🔑 Lista de IDs dos usuários
     });
+    return response.data;
+  },
+
+  deletarChat: async (chatId: number) => {
+    const response = await api.delete<Chat>(`/api/chats/${chatId}`);
     return response.data;
   }
 };
