@@ -37,3 +37,10 @@ export interface ChatListItem extends Chat {
   quantidadeNaoLidas?: number; // Do ChatResumoDTO - quantidade de mensagens não lidas
   groupId?: number; // Do ChatResumoDTO - ID do grupo para operações
 }
+
+export interface Notificacao {
+  chatId: number;
+  chatNome: string;
+  conteudoResumo: string;
+  enviadoEm: string; // vem como ISO do back
+}

@@ -2,6 +2,7 @@
 import { Client, StompSubscription } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { Mensagem } from '../types/index';
+import { Notificacao } from '../types/index';
 
 class WebSocketService {
   private client: Client | null = null;
@@ -76,6 +77,43 @@ class WebSocketService {
 
     this.subscriptions.set(destination, subscription);
     console.log(`🔔 Inscrito no chat ${chatId}`);
+  }
+
+  subscribeToUser(userId: number, callback: (notif: Notificacao) => void): void {
+    if (!this.client || !this.connected) {
+      console.error('WebSocket não conectado. Chame connect() primeiro.');
+      return;
+    }
+
+    const destination = `/topic/users/${userId}`;
+
+    if (this.subscriptions.has(destination)) {
+      this.subscriptions.get(destination)?.unsubscribe();
+    }
+
+    const subscription = this.client.subscribe(destination, (message) => {
+      try {
+        const notif: Notificacao = JSON.parse(message.body);
+        console.log('🔔 Notificação recebida:', notif);
+        callback(notif);
+      } catch (error) {
+        console.error('Erro ao processar notificação:', error);
+      }
+    });
+
+    this.subscriptions.set(destination, subscription);
+    console.log(`🔔 Inscrito em notificações do usuário ${userId}`);
+  }
+
+  unsubscribeFromUser(userId: number): void {
+    const destination = `/topic/users/${userId}`;
+    const subscription = this.subscriptions.get(destination);
+
+    if (subscription) {
+      subscription.unsubscribe();
+      this.subscriptions.delete(destination);
+      console.log(`🔕 Desinscrito de notificações do usuário ${userId}`);
+    }
   }
 
   unsubscribeFromChat(chatId: number): void {

@@ -25,12 +25,13 @@ const ChatCorporativoContent = () => {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [isGroupCreator, setIsGroupCreator] = useState(false);
   const [groupIdSettings, setGroupIdSettings] = useState<number | null>(null);
-  
+
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mensagensContainerRef = useRef<HTMLDivElement | null>(null);
   const wsConnectedRef = useRef(false);
   const carregandoDadosRef = useRef(false);
+  const [wsConnected, setWsConnected] = useState(false);
 
   const PAGE_SIZE = 50;
 
@@ -39,7 +40,7 @@ const ChatCorporativoContent = () => {
   const [loadingMais, setLoadingMais] = useState(false);
 
 
-  
+
 
   // Monitorar mudanças no usuário (apenas para debug)
   useEffect(() => {
@@ -63,6 +64,7 @@ const ChatCorporativoContent = () => {
         console.log('🔌 Desconectando WebSocket...');
         websocketService.disconnect();
         wsConnectedRef.current = false;
+        setWsConnected(false);
       }
     };
   }, [user, chats.length]);
@@ -88,68 +90,123 @@ const ChatCorporativoContent = () => {
   }, [chatAtivo?.id, mensagens, mensagensPage]);
 
 
-  
+  // Solicitar permissão de notificação
   useEffect(() => {
-    if (chatAtivo && wsConnectedRef.current) {
-      console.log('📡 Inscrevendo no chat:', chatAtivo.id);
+    if (user && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+  }, [user]);
 
-      websocketService.subscribeToChat(chatAtivo.id, (novaMensagem) => {
-        if (!user) return;
+  // escutar notificações por usuário
+  useEffect(() => {
+    if (!user || !wsConnected) return;
 
-        const isOwn = novaMensagem.remetenteId === user.id;
+    console.log('🔔 Inscrevendo em notificações do usuário:', user.id);
 
-        // garante lida = true pro remetente
-        const mensagemComLida: Mensagem = {
-          ...novaMensagem,
-          lida: isOwn || !!novaMensagem.lida,
-        };
+    websocketService.subscribeToUser(user.id, (notif) => {
+      console.log('🔔 Notificação recebida no front:', notif);
 
-        // adiciona no array de mensagens e rola pro fim
-        setMensagens((prev) => {
-          if (prev.some((m) => m.id === mensagemComLida.id)) {
-            return prev;
+      // Lógica de notificação do navegador
+      const shouldNotify =
+        document.hidden ||
+        !chatAtivo ||
+        chatAtivo.id !== notif.chatId;
+
+      if (shouldNotify && Notification.permission === 'granted') {
+        new Notification(`Nova mensagem de ${notif.chatNome}`, {
+          body: notif.conteudoResumo,
+          // icon: '/logo192.png' // Pode adicionar um ícone se tiver
+        });
+      }
+
+      setChats((prev) =>
+        prev.map((c) => {
+          if (c.id !== notif.chatId) return c;
+
+          const isChatAtivo = chatAtivo && c.id === chatAtivo.id;
+
+          const quantidadeNaoLidas = isChatAtivo
+            ? 0
+            : (c.quantidadeNaoLidas || 0) + 1;
+
+          return {
+            ...c,
+            ultimaMensagem: notif.conteudoResumo,
+            ultimoConteudo: notif.conteudoResumo,
+            horaUltimaMensagem: formatMessageTime(notif.enviadoEm),
+            ultimaMensagemEm: notif.enviadoEm,
+            quantidadeNaoLidas,
+          };
+        })
+      );
+    });
+
+    return () => {
+      if (user) {
+        console.log('🔕 Desinscrevendo notificações do usuário:', user.id);
+        websocketService.unsubscribeFromUser(user.id);
+      }
+    };
+  }, [user?.id, wsConnected, chatAtivo?.id]);
+
+
+  useEffect(() => {
+    if (!chatAtivo || !wsConnected) return;
+
+    console.log('📡 Inscrevendo no chat:', chatAtivo.id);
+
+    websocketService.subscribeToChat(chatAtivo.id, (novaMensagem) => {
+      if (!user) return;
+
+      const isOwn = novaMensagem.remetenteId === user.id;
+
+      // deixa o back decidir se está lida ou não
+      const mensagemComLida: Mensagem = {
+        ...novaMensagem,
+        lida: !!novaMensagem.lida,
+      };
+
+      setMensagens((prev) => {
+        if (prev.some((m) => m.id === mensagemComLida.id)) {
+          return prev;
+        }
+
+        const updated = [...prev, mensagemComLida];
+
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 0);
+
+        return updated;
+      });
+
+      setChats((prev) =>
+        prev.map((c) => {
+          if (c.id !== novaMensagem.chatId) {
+            return c;
           }
 
-          const updated = [...prev, mensagemComLida];
+          const isChatAtivo = chatAtivo && c.id === chatAtivo.id;
 
-          // scroll só quando chega mensagem nova
-          setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-          }, 0);
+          const quantidadeNaoLidas = isChatAtivo
+            ? 0
+            : !isOwn
+              ? (c.quantidadeNaoLidas || 0) + 1
+              : c.quantidadeNaoLidas;
 
-          return updated;
-        });
-
-        // atualiza lista de chats (sidebar)
-        setChats((prev) =>
-          prev.map((c) => {
-            // se não for o chat da mensagem, não mexe
-            if (c.id !== novaMensagem.chatId) {
-              return c;
-            }
-
-            // é o chat da mensagem
-            const isChatAtivo = chatAtivo && c.id === chatAtivo.id;
-
-            // se o chat NÃO está aberto e a msg não é minha, soma não lida
-            const quantidadeNaoLidas = isChatAtivo
-              ? 0
-              : !isOwn
-                ? (c.quantidadeNaoLidas || 0) + 1
-                : c.quantidadeNaoLidas;
-
-            return {
-              ...c,
-              ultimaMensagem: novaMensagem.conteudo,
-              ultimoConteudo: novaMensagem.conteudo,
-              horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
-              ultimaMensagemEm: novaMensagem.enviadoEm,
-              quantidadeNaoLidas,
-            };
-          })
-        );
-      });
-    }
+          return {
+            ...c,
+            ultimaMensagem: novaMensagem.conteudo,
+            ultimoConteudo: novaMensagem.conteudo,
+            horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
+            ultimaMensagemEm: novaMensagem.enviadoEm,
+            quantidadeNaoLidas,
+          };
+        })
+      );
+    });
 
     return () => {
       if (chatAtivo) {
@@ -157,8 +214,7 @@ const ChatCorporativoContent = () => {
         websocketService.unsubscribeFromChat(chatAtivo.id);
       }
     };
-    // importante: depende só do id do chat e do estado da conexão
-  }, [chatAtivo?.id, wsConnectedRef.current, user?.id]);
+  }, [chatAtivo?.id, wsConnected, user?.id]);
 
 
   const conectarWebSocket = async () => {
@@ -166,6 +222,7 @@ const ChatCorporativoContent = () => {
       console.log('🔌 Conectando WebSocket...');
       await websocketService.connect();
       wsConnectedRef.current = true;
+      setWsConnected(true);
       console.log('✅ WebSocket conectado com sucesso');
     } catch (error) {
       console.error('❌ Erro ao conectar WebSocket:', error);
@@ -177,7 +234,7 @@ const ChatCorporativoContent = () => {
     try {
       console.log('📊 Iniciando carregamento de dados iniciais...');
       setLoading(true);
-      
+
       const [chatsData, usuariosData] = await Promise.all([
         chatService.listarMeusChats(),
         userService.listarUsuarios()
@@ -190,7 +247,7 @@ const ChatCorporativoContent = () => {
       const chatsComInfo: ChatListItem[] = chatsData.map(chat => ({
         ...chat,
         ultimaMensagem: chat.ultimoConteudo || 'Clique para ver mensagens',
-        horaUltimaMensagem: chat.ultimaMensagemEm 
+        horaUltimaMensagem: chat.ultimaMensagemEm
           ? formatMessageTime(chat.ultimaMensagemEm)
           : 'Agora'
       }));
@@ -209,7 +266,7 @@ const ChatCorporativoContent = () => {
         setError('Sua sessão expirou. Por favor, faça login novamente.');
         return;
       }
-      
+
       setError('Erro ao carregar dados iniciais');
     }
   };
@@ -222,7 +279,7 @@ const ChatCorporativoContent = () => {
     console.log('chat.participantes:', chat.participantes);
     console.log('Objeto completo do chat:', chat);
     console.log('========================');
-    
+
     setChatAtivo(chat);
     setLoading(true);
     setGroupIdSettings(null);
@@ -244,7 +301,7 @@ const ChatCorporativoContent = () => {
       setMensagensPage(0);
       setMensagensHasMore(mensagensData.length === PAGE_SIZE);
 
-      
+
 
       if (chat.tipo === 'GRUPO' && chat.groupId) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
@@ -310,11 +367,10 @@ const ChatCorporativoContent = () => {
     };
 
     // Enviar via WebSocket
-    if (wsConnectedRef.current) {
+    // Enviar via WebSocket
+    if (wsConnected) {
       websocketService.sendMessage(chatAtivo.id, mensagemDTO);
       setNovaMensagem('');
-      // ✅ NÃO adicionar otimisticamente - deixar o servidor retornar
-      // A mensagem chegará via subscription ao tópico
     } else {
       setError('WebSocket desconectado. Tentando reconectar...');
       conectarWebSocket();
@@ -330,7 +386,7 @@ const ChatCorporativoContent = () => {
     setLoading(true);
     try {
       let novoChat: Chat;
-      
+
       if (usuariosSelecionados.length === 1) {
         // Chat privado com um usuário
         novoChat = await chatService.criarChatPrivado(usuariosSelecionados[0]);
@@ -340,16 +396,16 @@ const ChatCorporativoContent = () => {
         const nomesUsuarios = usuariosSelecionados
           .map(id => usuarios.find(u => u.id === id)?.nome || 'Usuário')
           .join(', ');
-        
+
         // Se houver outros usuários além dos selecionados, incluir o criador no nome
-        const nomeGrupo = user 
+        const nomeGrupo = user
           ? `${user.nome}, ${nomesUsuarios}`
           : nomesUsuarios;
-        
+
         // Os usuariosIds devem conter os IDs dos usuários selecionados
         // O backend adiciona o criador automaticamente
         const grupoData = await chatService.criarGrupoChat(nomeGrupo, usuariosSelecionados);
-        
+
         // Transformar GroupDTO em Chat
         // O backend retorna os membros do grupo, convertemos para User[]
         const participantes: User[] = grupoData.membros.map((membro: any) => ({
@@ -357,7 +413,7 @@ const ChatCorporativoContent = () => {
           nome: membro.nome,
           email: membro.email
         }));
-        
+
         novoChat = {
           id: grupoData.id,
           nome: grupoData.nome,
@@ -378,7 +434,7 @@ const ChatCorporativoContent = () => {
         },
         ...prev
       ]);
-      
+
       setShowNovoChat(false);
       setUsuariosSelecionados([]);
       setSearchUsuario('');
@@ -396,13 +452,14 @@ const ChatCorporativoContent = () => {
       await logout();
       websocketService.disconnect();
       wsConnectedRef.current = false;
+      setWsConnected(false);
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
   };
 
-  const usuariosFiltrados = usuarios.filter(u => 
-    u.id !== user?.id && 
+  const usuariosFiltrados = usuarios.filter(u =>
+    u.id !== user?.id &&
     u.nome.toLowerCase().includes(searchUsuario.toLowerCase())
   );
 
@@ -451,7 +508,7 @@ const ChatCorporativoContent = () => {
               <Plus size={20} />
             </button>
           </div>
-          
+
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-semibold">
               {user.nome.charAt(0).toUpperCase()}
@@ -480,9 +537,8 @@ const ChatCorporativoContent = () => {
               <button
                 key={chat.id}
                 onClick={() => selecionarChat(chat)}
-                className={`w-full p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors text-left ${
-                  chatAtivo?.id === chat.id ? 'bg-blue-50' : ''
-                }`}
+                className={`w-full p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors text-left ${chatAtivo?.id === chat.id ? 'bg-blue-50' : ''
+                  }`}
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 relative">
@@ -498,7 +554,7 @@ const ChatCorporativoContent = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start">
                       {/* Para privado, mostra o nome do outro usuário; para grupo, mostra o nome do grupo */}
@@ -540,7 +596,7 @@ const ChatCorporativoContent = () => {
                 >
                   <Menu size={20} />
                 </button>
-                
+
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
                   {chatAtivo.tipo === 'GRUPO' ? (
                     <Users size={20} />
@@ -548,11 +604,11 @@ const ChatCorporativoContent = () => {
                     chatAtivo.nome.charAt(0).toUpperCase()
                   )}
                 </div>
-                
+
                 <div>
                   <h3 className="font-semibold text-gray-800">{chatAtivo.nome}</h3>
                   <p className="text-xs text-gray-500">
-                    {chatAtivo.tipo === 'GRUPO' 
+                    {chatAtivo.tipo === 'GRUPO'
                       ? `${chatAtivo.participantes.length} participantes`
                       : 'Online'
                     }
@@ -579,21 +635,21 @@ const ChatCorporativoContent = () => {
 
             {/* Mensagens */}
             <div
-                ref={mensagensContainerRef}
-                className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
-              >
-                {/* Botão de carregar mais (topo) */}
-                {mensagensHasMore && mensagens.length > 0 && (
-                  <div className="flex justify-center mb-4">
-                    <button
-                      onClick={carregarMaisMensagens}
-                      disabled={loadingMais}
-                      className="text-xs px-3 py-1 rounded-full border border-blue-500 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
-                    >
-                      {loadingMais ? 'Carregando...' : 'Carregar mensagens mais antigas'}
-                    </button>
-                  </div>
-                )}
+              ref={mensagensContainerRef}
+              className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50"
+            >
+              {/* Botão de carregar mais (topo) */}
+              {mensagensHasMore && mensagens.length > 0 && (
+                <div className="flex justify-center mb-4">
+                  <button
+                    onClick={carregarMaisMensagens}
+                    disabled={loadingMais}
+                    className="text-xs px-3 py-1 rounded-full border border-blue-500 text-blue-600 hover:bg-blue-50 disabled:border-gray-300 disabled:text-gray-400"
+                  >
+                    {loadingMais ? 'Carregando...' : 'Carregar mensagens mais antigas'}
+                  </button>
+                </div>
+              )}
               {loading && mensagens.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -609,7 +665,7 @@ const ChatCorporativoContent = () => {
               ) : (
                 mensagens.map((msg) => {
                   const isOwn = msg.remetenteId === user.id;
-                  
+
                   return (
                     <div
                       key={msg.id}
@@ -620,16 +676,25 @@ const ChatCorporativoContent = () => {
                           <p className="text-xs text-gray-600 mb-1 px-3">{msg.remetenteNome}</p>
                         )}
                         <div
-                          className={`rounded-2xl px-4 py-2 ${
-                            isOwn
+                          className={`rounded-2xl px-4 py-2 ${isOwn
                               ? 'bg-blue-600 text-white'
                               : 'bg-white text-gray-800 border border-gray-200'
-                          }`}
+                            }`}
                         >
                           <p className="break-words whitespace-pre-line">{msg.conteudo}</p>
-                          <p className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
-                            {formatMessageTime(msg.enviadoEm)}
+                          <p
+                            className={`text-xs mt-1 flex items-center gap-1 ${isOwn ? 'text-blue-200 justify-end' : 'text-gray-500'
+                              }`}
+                          >
+                            <span>{formatMessageTime(msg.enviadoEm)}</span>
+
+                            {isOwn && (
+                              <span className="ml-1">
+                                {msg.lida ? '✓✓' : '✓'}
+                              </span>
+                            )}
                           </p>
+
                         </div>
                       </div>
                     </div>
@@ -643,31 +708,31 @@ const ChatCorporativoContent = () => {
             <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex items-center space-x-2">
                 <textarea
-                    value={novaMensagem}
-                    onChange={(e) => setNovaMensagem(e.target.value)}
-                    onKeyDown={(e) => {
-                      // Enter sozinho = envia
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault(); // impede quebra de linha
-                        enviarMensagem();
-                      }
-                      // Shift+Enter = quebra de linha normal
-                    }}
-                    placeholder="Digite sua mensagem..."
-                    rows={1}
-                    className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl resize-none
+                  value={novaMensagem}
+                  onChange={(e) => setNovaMensagem(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter sozinho = envia
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault(); // impede quebra de linha
+                      enviarMensagem();
+                    }
+                    // Shift+Enter = quebra de linha normal
+                  }}
+                  placeholder="Digite sua mensagem..."
+                  rows={1}
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl resize-none
                               focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    disabled={!wsConnectedRef.current}
-                  />
+                  disabled={!wsConnected}
+                />
                 <button
                   onClick={enviarMensagem}
-                  disabled={!novaMensagem.trim() || !wsConnectedRef.current}
+                  disabled={!novaMensagem.trim() || !wsConnected}
                   className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-full transition-colors"
                 >
                   <Send size={20} />
                 </button>
               </div>
-              {!wsConnectedRef.current && (
+              {!wsConnected && (
                 <p className="text-xs text-red-500 mt-2 text-center">
                   Desconectado - Tentando reconectar...
                 </p>
@@ -758,18 +823,16 @@ const ChatCorporativoContent = () => {
                         setUsuariosSelecionados(prev => [...prev, usuario.id]);
                       }
                     }}
-                    className={`w-full p-3 rounded-lg flex items-center space-x-3 transition-colors ${
-                      usuariosSelecionados.includes(usuario.id)
+                    className={`w-full p-3 rounded-lg flex items-center space-x-3 transition-colors ${usuariosSelecionados.includes(usuario.id)
                         ? 'bg-blue-50 border-2 border-blue-500'
                         : 'hover:bg-gray-50 border-2 border-transparent'
-                    }`}
+                      }`}
                     disabled={loading}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
-                      usuariosSelecionados.includes(usuario.id)
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${usuariosSelecionados.includes(usuario.id)
                         ? 'bg-blue-600'
                         : 'bg-gradient-to-br from-blue-400 to-purple-500'
-                    }`}>
+                      }`}>
                       {usuariosSelecionados.includes(usuario.id) ? (
                         <div className="text-lg">✓</div>
                       ) : (
