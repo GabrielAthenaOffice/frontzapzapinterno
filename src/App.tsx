@@ -32,7 +32,7 @@ const ChatCorporativoContent = () => {
   const wsConnectedRef = useRef(false);
   const carregandoDadosRef = useRef(false);
 
-  const PAGE_SIZE = 20;
+  const PAGE_SIZE = 50;
 
   const [mensagensPage, setMensagensPage] = useState(0);
   const [mensagensHasMore, setMensagensHasMore] = useState(true);
@@ -75,6 +75,19 @@ const ChatCorporativoContent = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (!chatAtivo) return;
+    if (!mensagens.length) return;
+
+    // só auto-scroll quando estamos na primeira página
+    if (mensagensPage > 0) return;
+
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+    });
+  }, [chatAtivo?.id, mensagens, mensagensPage]);
+
+
   
   useEffect(() => {
     if (chatAtivo && wsConnectedRef.current) {
@@ -109,31 +122,29 @@ const ChatCorporativoContent = () => {
 
         // atualiza lista de chats (sidebar)
         setChats((prev) =>
-          prev.map((chat) => {
-            if (chat.id !== chatAtivo.id) {
-              // chat NÃO está aberto: se a msg não é minha, soma não lida
-              const novaQtdNaoLidas = !isOwn
-                ? (chat.quantidadeNaoLidas || 0) + 1
-                : chat.quantidadeNaoLidas;
-
-              return {
-                ...chat,
-                ultimaMensagem: novaMensagem.conteudo,
-                ultimoConteudo: novaMensagem.conteudo,
-                horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
-                ultimaMensagemEm: novaMensagem.enviadoEm,
-                quantidadeNaoLidas: novaQtdNaoLidas,
-              };
+          prev.map((c) => {
+            // se não for o chat da mensagem, não mexe
+            if (c.id !== novaMensagem.chatId) {
+              return c;
             }
 
-            // chat ATIVO: badge zera
+            // é o chat da mensagem
+            const isChatAtivo = chatAtivo && c.id === chatAtivo.id;
+
+            // se o chat NÃO está aberto e a msg não é minha, soma não lida
+            const quantidadeNaoLidas = isChatAtivo
+              ? 0
+              : !isOwn
+                ? (c.quantidadeNaoLidas || 0) + 1
+                : c.quantidadeNaoLidas;
+
             return {
-              ...chat,
+              ...c,
               ultimaMensagem: novaMensagem.conteudo,
               ultimoConteudo: novaMensagem.conteudo,
               horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
               ultimaMensagemEm: novaMensagem.enviadoEm,
-              quantidadeNaoLidas: 0,
+              quantidadeNaoLidas,
             };
           })
         );
@@ -148,17 +159,6 @@ const ChatCorporativoContent = () => {
     };
     // importante: depende só do id do chat e do estado da conexão
   }, [chatAtivo?.id, wsConnectedRef.current, user?.id]);
-
-
-  const handleMensagensScroll = () => {
-    const c = mensagensContainerRef.current;
-    if (!c || loadingMais || !mensagensHasMore) return;
-
-    // chegou perto do topo -> carrega mais
-    if (c.scrollTop <= 50) {
-      carregarMaisMensagens();
-    }
-  };
 
 
   const conectarWebSocket = async () => {
@@ -244,10 +244,7 @@ const ChatCorporativoContent = () => {
       setMensagensPage(0);
       setMensagensHasMore(mensagensData.length === PAGE_SIZE);
 
-      // rolar pro final
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-      }, 0);
+      
 
       if (chat.tipo === 'GRUPO' && chat.groupId) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
@@ -629,7 +626,7 @@ const ChatCorporativoContent = () => {
                               : 'bg-white text-gray-800 border border-gray-200'
                           }`}
                         >
-                          <p className="break-words">{msg.conteudo}</p>
+                          <p className="break-words whitespace-pre-line">{msg.conteudo}</p>
                           <p className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
                             {formatMessageTime(msg.enviadoEm)}
                           </p>
@@ -645,15 +642,23 @@ const ChatCorporativoContent = () => {
             {/* Input */}
             <div className="bg-white border-t border-gray-200 p-4">
               <div className="flex items-center space-x-2">
-                <input
-                  type="text"
-                  value={novaMensagem}
-                  onChange={(e) => setNovaMensagem(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && enviarMensagem()}
-                  placeholder="Digite sua mensagem..."
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  disabled={!wsConnectedRef.current}
-                />
+                <textarea
+                    value={novaMensagem}
+                    onChange={(e) => setNovaMensagem(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter sozinho = envia
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault(); // impede quebra de linha
+                        enviarMensagem();
+                      }
+                      // Shift+Enter = quebra de linha normal
+                    }}
+                    placeholder="Digite sua mensagem..."
+                    rows={1}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl resize-none
+                              focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    disabled={!wsConnectedRef.current}
+                  />
                 <button
                   onClick={enviarMensagem}
                   disabled={!novaMensagem.trim() || !wsConnectedRef.current}
