@@ -1,6 +1,7 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile } from 'lucide-react';
+import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { chatService, mensagemService, userService, groupService } from './services/api';
 import websocketService from './services/websocket';
@@ -25,6 +26,7 @@ const ChatCorporativoContent = () => {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [isGroupCreator, setIsGroupCreator] = useState(false);
   const [groupIdSettings, setGroupIdSettings] = useState<number | null>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -98,6 +100,24 @@ const ChatCorporativoContent = () => {
       }
     }
   }, [user]);
+
+  // Fechar emoji picker ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (showEmojiPicker && !target.closest('.emoji-picker-container')) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   // escutar notificações por usuário
   useEffect(() => {
@@ -737,7 +757,28 @@ const ChatCorporativoContent = () => {
 
             {/* Input */}
             <div className="bg-white border-t border-gray-200 p-4">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 relative">
+                {/* Emoji Picker */}
+                {showEmojiPicker && (
+                  <div className="absolute bottom-16 left-0 z-50 emoji-picker-container">
+                    <EmojiPicker
+                      onEmojiClick={(emojiData: EmojiClickData) => {
+                        setNovaMensagem(prev => prev + emojiData.emoji);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Emoji Button */}
+                <button
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                  disabled={!wsConnected}
+                  type="button"
+                >
+                  <Smile size={20} className="text-gray-600" />
+                </button>
+
                 <textarea
                   value={novaMensagem}
                   onChange={(e) => setNovaMensagem(e.target.value)}
