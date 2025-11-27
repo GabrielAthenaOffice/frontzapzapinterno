@@ -14,8 +14,6 @@ const ChatCorporativoContent = () => {
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [chatAtivo, setChatAtivo] = useState<Chat | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
-  const [mensagensPage, setMensagensPage] = useState(0);
-  const [mensagensHasMore, setMensagensHasMore] = useState(true);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [showSidebar, setShowSidebar] = useState(true);
@@ -27,12 +25,10 @@ const ChatCorporativoContent = () => {
   const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [isGroupCreator, setIsGroupCreator] = useState(false);
   const [groupIdSettings, setGroupIdSettings] = useState<number | null>(null);
-  const PAGE_SIZE = 100; // Número de mensagens por página
-  
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wsConnectedRef = useRef(false);
-  const carregandoDadosRef = useRef(false); // 🔑 Evitar múltiplas requisições
+  const carregandoDadosRef = useRef(false);
 
   // Monitorar mudanças no usuário (apenas para debug)
   useEffect(() => {
@@ -77,30 +73,21 @@ const ChatCorporativoContent = () => {
     if (chatAtivo && wsConnectedRef.current) {
       console.log('📡 Inscrevendo no chat:', chatAtivo.id);
       websocketService.subscribeToChat(chatAtivo.id, (novaMensagem) => {
-        if (!user) return;
-
-        const mensagemComLida: Mensagem = {
-          ...novaMensagem,
-          lida: !!novaMensagem.lida, // undefined => false
-        };
-
         setMensagens(prev => {
-          if (prev.some(m => m.id === mensagemComLida.id)) {
+          if (prev.some(m => m.id === novaMensagem.id)) {
             return prev;
           }
-          return [...prev, mensagemComLida];
+          return [...prev, novaMensagem];
         });
 
         setChats(prev => prev.map(chat => 
           chat.id === chatAtivo.id
             ? { 
                 ...chat, 
-                ultimaMensagem: mensagemComLida.conteudo,
-                ultimoConteudo: mensagemComLida.conteudo,
-                horaUltimaMensagem: formatMessageTime(mensagemComLida.enviadoEm),
-                ultimaMensagemEm: mensagemComLida.enviadoEm,
-                // se o chat está aberto, faz sentido manter 0 não lidas mesmo
-                quantidadeNaoLidas: 0,
+                ultimaMensagem: novaMensagem.conteudo,
+                ultimoConteudo: novaMensagem.conteudo,
+                horaUltimaMensagem: formatMessageTime(novaMensagem.enviadoEm),
+                ultimaMensagemEm: novaMensagem.enviadoEm
               }
             : chat
         ));
@@ -182,25 +169,9 @@ const ChatCorporativoContent = () => {
     setGroupIdSettings(null);
     setIsGroupCreator(false);
 
-    // reset de paginação de mensagens
-    setMensagens([]);
-    setMensagensPage(0);
-    setMensagensHasMore(true);
-
     try {
-      const mensagensData = await mensagemService.listarMensagens(chat.id, 0, PAGE_SIZE);
+      const mensagensData = await mensagemService.listarMensagens(chat.id);
       setMensagens(mensagensData);
-      setMensagensPage(0);
-      setMensagensHasMore(mensagensData.length === PAGE_SIZE);
-
-      // zera badge desse chat localmente
-      setChats(prev =>
-        prev.map(c =>
-          c.id === chat.id
-            ? { ...c, quantidadeNaoLidas: 0 }
-            : c
-        )
-      );
 
       if (chat.tipo === 'GRUPO' && chat.groupId) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
@@ -208,7 +179,6 @@ const ChatCorporativoContent = () => {
 
         setIsGroupCreator(true);
       }
-
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
       setError('Erro ao carregar mensagens');
@@ -277,8 +247,7 @@ const ChatCorporativoContent = () => {
         }));
         
         novoChat = {
-          id: grupoData.chatId,
-          groupId: grupoData.id,
+          id: grupoData.id,
           nome: grupoData.nome,
           tipo: 'GRUPO' as const,
           participantes: participantes,
@@ -513,10 +482,13 @@ const ChatCorporativoContent = () => {
               ) : (
                 mensagens.map((msg) => {
                   const isOwn = msg.remetenteId === user.id;
-
+                  
                   return (
-                    <div key={msg.id} className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                      <div className="max-w-xs lg:max-w-md">
+                    <div
+                      key={msg.id}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`max-w-xs lg:max-w-md`}>
                         {!isOwn && chatAtivo.tipo === 'GRUPO' && (
                           <p className="text-xs text-gray-600 mb-1 px-3">{msg.remetenteNome}</p>
                         )}
@@ -528,16 +500,9 @@ const ChatCorporativoContent = () => {
                           }`}
                         >
                           <p className="break-words">{msg.conteudo}</p>
-                          <div className="flex items-center justify-end gap-2 mt-1">
-                            <p className={`text-xs ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
-                              {formatMessageTime(msg.enviadoEm)}
-                            </p>
-                            {isOwn && (
-                              <span className="text-xs">
-                                {msg.lida ? '✓✓' : '✓'}
-                              </span>
-                            )}
-                          </div>
+                          <p className={`text-xs mt-1 ${isOwn ? 'text-blue-200' : 'text-gray-500'}`}>
+                            {formatMessageTime(msg.enviadoEm)}
+                          </p>
                         </div>
                       </div>
                     </div>

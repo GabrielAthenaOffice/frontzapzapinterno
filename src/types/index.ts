@@ -1,4 +1,3 @@
-// types/index.ts
 export interface User {
   id: number;
   nome: string;
@@ -36,4 +35,5 @@ export interface ChatListItem extends Chat {
   ultimaMensagemEm?: string; // Do ChatResumoDTO
   outroUsuario?: string; // Do ChatResumoDTO - nome do outro usuário em chat privado
   quantidadeNaoLidas?: number; // Do ChatResumoDTO - quantidade de mensagens não lidas
+  groupId?: number; // Do ChatResumoDTO - ID do grupo para operações
 }
