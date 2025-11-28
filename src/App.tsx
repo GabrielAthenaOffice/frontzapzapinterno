@@ -562,7 +562,7 @@ const ChatCorporativoContent = () => {
       <div className={`${showSidebar ? 'w-80' : 'w-0'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 overflow-hidden flex flex-col`}>
         <div className="p-4 bg-blue-600 text-white">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold">Conversas</h2>
+              <h2 className="text-xl font-bold">Conversas</h2>
             <button
               onClick={() => setShowNovoChat(true)}
               className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
