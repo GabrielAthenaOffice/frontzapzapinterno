@@ -74,9 +74,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+        <div className="min-h-screen bg-gray-50">
             {/* Header */}
-            <header className="border-b border-gray-700 bg-gray-900/50 backdrop-blur-sm">
+            <header className="border-b border-gray-200 bg-white shadow-sm">
                 <div className="max-w-7xl mx-auto px-6 py-4">
                     <div className="flex items-center justify-between">
                         {/* Logo */}
@@ -87,25 +87,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                                 className="h-12 object-contain"
                             />
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Athena Office</h1>
-                                <p className="text-sm text-gray-400">Central de Aplicações</p>
+                                <h1 className="text-2xl font-bold text-gray-900">Athena Office</h1>
+                                <p className="text-sm text-gray-600">Central de Aplicações</p>
                             </div>
                         </div>
 
                         {/* User Info */}
                         <div className="flex items-center space-x-4">
                             <div className="text-right">
-                                <p className="text-sm font-medium text-white">{user?.nome}</p>
-                                <p className="text-xs text-gray-400">{user?.email}</p>
+                                <p className="text-sm font-medium text-gray-900">{user?.nome}</p>
+                                <p className="text-xs text-gray-600">{user?.email}</p>
                             </div>
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 
+                            <div className="w-10 h-10 bg-blue-600 
                               rounded-full flex items-center justify-center text-white font-semibold">
                                 {user?.nome.charAt(0).toUpperCase()}
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="p-2 hover:bg-gray-800 rounded-lg transition-colors text-gray-400 
-                           hover:text-red-400"
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600 
+                           hover:text-red-600"
                                 title="Sair"
                             >
                                 <LogOut size={20} />
@@ -119,10 +119,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
             <main className="max-w-7xl mx-auto px-6 py-12">
                 {/* Welcome Section */}
                 <div className="mb-12">
-                    <h2 className="text-3xl font-bold text-white mb-2">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">
                         Bem-vindo, {user?.nome.split(' ')[0]}! 👋
                     </h2>
-                    <p className="text-gray-400">
+                    <p className="text-gray-600">
                         Selecione um dos programas abaixo
                     </p>
                 </div>
