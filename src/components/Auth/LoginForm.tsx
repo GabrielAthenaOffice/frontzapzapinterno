@@ -1,6 +1,6 @@
 // src/components/Auth/LoginForm.tsx
 import React, { useState } from 'react';
-import { MessageCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const LoginForm: React.FC = () => {
@@ -14,7 +14,7 @@ const LoginForm: React.FC = () => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
+
     console.log('🚀 Botão de login clicado com:', { email, senha });
 
     try {
@@ -34,11 +34,13 @@ const LoginForm: React.FC = () => {
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
         {/* Logo e Título */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
-            <MessageCircle className="w-12 h-12 text-blue-600" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <img
+              src="/logo principal site.png"
+              alt="Athena Logo"
+              className="w-32 h-32 object-contain"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Athena Chat</h1>
-          <p className="text-gray-600">Chat Corporativo Interno</p>
         </div>
 
         {/* Erro */}
