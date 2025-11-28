@@ -26,7 +26,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
         {
             id: 'app-athena',
             nome: 'App Athena',
-            descricao: 'Aplicação principal da Athena Office',
+            descricao: 'Aplicação principal para atividades comerciais',
             icon: <ExternalLink size={24} />,
             tipo: 'externo',
             url: 'https://app.athenaoffice.com.br',
@@ -34,12 +34,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
             statusColor: 'green'
         },
         {
-            id: 'portal-colaborador',
-            nome: 'Portal do Colaborador',
-            descricao: 'Portal de gestão e recursos para colaboradores',
+            id: 'correspondencias',
+            nome: 'Correspondências',
+            descricao: 'Portal de correspondências',
             icon: <Users size={24} />,
             tipo: 'externo',
-            url: '#', // Substituir pelo link real
+            url: 'https://front-correspondencias-athena-d9yx.vercel.app/', // Substituir pelo link real
             status: 'Em Produção',
             statusColor: 'green'
         },
@@ -50,8 +50,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
             icon: <FileText size={24} />,
             tipo: 'externo',
             url: '#', // Substituir pelo link real
-            status: 'Disponível',
-            statusColor: 'blue'
+            status: 'Beta',
+            statusColor: 'yellow'
         },
         {
             id: 'analytics',
@@ -123,7 +123,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                         Bem-vindo, {user?.nome.split(' ')[0]}! 👋
                     </h2>
                     <p className="text-gray-400">
-                        Selecione uma aplicação para começar
+                        Selecione um dos programas abaixo
                     </p>
                 </div>
 
