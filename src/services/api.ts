@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { LoginData, User, Chat, Mensagem } from '../types';
+import { LoginData, User, Chat, Mensagem, FileUploadResponse } from '../types';
 
 const api = axios.create({
   baseURL: 'http://localhost:8080',
@@ -135,6 +135,21 @@ export const userService = {
 
   buscarUsuarioPorId: async (userId: number) => {
     const response = await api.get<User>(`/api/users/${userId}`);
+    return response.data;
+  }
+};
+
+// ===== FILE ENDPOINTS =====
+export const fileService = {
+  uploadFile: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<FileUploadResponse>('/api/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   }
 };

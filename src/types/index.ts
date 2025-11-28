@@ -14,6 +14,15 @@ export interface Chat {
   groupId?: number; // ID do grupo se for chat de grupo
 }
 
+export interface Anexo {
+  id: number;
+  nomeArquivo: string;
+  tipoMime: string;
+  tamanhoBytes: number;
+  urlPublica: string;
+  caminhoSupabase: string;
+}
+
 export interface Mensagem {
   id: number;
   chatId: number;
@@ -22,6 +31,17 @@ export interface Mensagem {
   conteudo: string;
   enviadoEm: string;
   lida: boolean;
+  anexos?: Anexo[];
+}
+
+export interface FileUploadResponse {
+  success: boolean;
+  message: string;
+  fileId: string;
+  fileName: string;
+  fileUrl: string;
+  fileSizeBytes: number;
+  mimeType: string;
 }
 
 export interface LoginData {

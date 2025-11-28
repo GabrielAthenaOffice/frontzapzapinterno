@@ -1,12 +1,12 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun, Paperclip, FileText, Image as ImageIcon, Download } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
-import { chatService, mensagemService, userService, groupService } from './services/api';
+import { chatService, mensagemService, userService, groupService, fileService } from './services/api';
 import websocketService from './services/websocket';
-import { Chat, Mensagem, User, ChatListItem } from './types';
+import { Chat, Mensagem, User, ChatListItem, Anexo } from './types';
 import { formatMessageTime } from './utils/dateFormartter';
 import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
@@ -31,6 +31,9 @@ const ChatCorporativoContent = () => {
   const [isGroupCreator, setIsGroupCreator] = useState(false);
   const [groupIdSettings, setGroupIdSettings] = useState<number | null>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [anexosPendentes, setAnexosPendentes] = useState<Anexo[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -199,6 +202,13 @@ const ChatCorporativoContent = () => {
       if (!user) return;
 
       const isOwn = novaMensagem.remetenteId === user.id;
+
+      console.log('📨 Mensagem recebida no App.tsx:', novaMensagem);
+      if (novaMensagem.anexos) {
+        console.log('📎 Anexos na mensagem:', novaMensagem.anexos);
+      } else {
+        console.log('⚠️ Mensagem sem campo anexos');
+      }
 
       // deixa o back decidir se está lida ou não
       const mensagemComLida: Mensagem = {
@@ -402,22 +412,65 @@ const ChatCorporativoContent = () => {
     }
   };
 
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      // Upload de cada arquivo selecionado
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const response = await fileService.uploadFile(file);
+
+        if (response.success) {
+          const novoAnexo: Anexo = {
+            id: Date.now(), // ID temporário, o back vai gerar o real
+            nomeArquivo: response.fileName,
+            tipoMime: response.mimeType,
+            tamanhoBytes: response.fileSizeBytes,
+            urlPublica: response.fileUrl,
+            caminhoSupabase: response.fileId
+          };
+
+          setAnexosPendentes(prev => [...prev, novoAnexo]);
+        } else {
+          setError(`Erro ao enviar ${file.name}: ${response.message}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Erro no upload:', error);
+      setError('Falha ao fazer upload do arquivo');
+    } finally {
+      setUploading(false);
+      // Limpar input para permitir selecionar o mesmo arquivo novamente
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removerAnexoPendente = (index: number) => {
+    setAnexosPendentes(prev => prev.filter((_, i) => i !== index));
+  };
+
 
   const enviarMensagem = () => {
-    if (!novaMensagem.trim() || !chatAtivo || !user) return;
+    if ((!novaMensagem.trim() && anexosPendentes.length === 0) || !chatAtivo || !user) return;
 
     const mensagemDTO = {
       chatId: chatAtivo.id,
       remetenteId: user.id,
       remetenteNome: user.nome,
-      conteudo: novaMensagem
+      conteudo: novaMensagem,
+      anexos: anexosPendentes
     };
 
-    // Enviar via WebSocket
     // Enviar via WebSocket
     if (wsConnected) {
       websocketService.sendMessage(chatAtivo.id, mensagemDTO);
       setNovaMensagem('');
+      setAnexosPendentes([]);
     } else {
       setError('WebSocket desconectado. Tentando reconectar...');
       conectarWebSocket();
@@ -562,7 +615,7 @@ const ChatCorporativoContent = () => {
       <div className={`${showSidebar ? 'w-80' : 'w-0'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 overflow-hidden flex flex-col`}>
         <div className="p-4 bg-blue-600 text-white">
           <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Conversas</h2>
+            <h2 className="text-xl font-bold">Conversas</h2>
             <button
               onClick={() => setShowNovoChat(true)}
               className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
@@ -764,6 +817,40 @@ const ChatCorporativoContent = () => {
                             : 'bg-white text-gray-800 border border-gray-200'
                             }`}
                         >
+                          {/* Renderizar anexos */}
+                          {msg.anexos && msg.anexos.length > 0 && (
+                            <div className="mb-2 space-y-2">
+                              {msg.anexos.map((anexo) => (
+                                <div key={anexo.id} className={`rounded-lg overflow-hidden ${isOwn ? 'bg-blue-500' : 'bg-gray-100'}`}>
+                                  {anexo.tipoMime.startsWith('image/') ? (
+                                    <div className="relative group">
+                                      <img
+                                        src={anexo.urlPublica}
+                                        alt={anexo.nomeArquivo}
+                                        className="max-w-full h-auto max-h-60 object-cover cursor-pointer"
+                                        onClick={() => window.open(anexo.urlPublica, '_blank')}
+                                      />
+                                    </div>
+                                  ) : (
+                                    <a
+                                      href={anexo.urlPublica}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`flex items-center p-2 gap-2 hover:opacity-80 transition-opacity ${isOwn ? 'text-white' : 'text-gray-800'}`}
+                                    >
+                                      <FileText size={20} />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium truncate">{anexo.nomeArquivo}</p>
+                                        <p className="text-xs opacity-70">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
+                                      </div>
+                                      <Download size={16} />
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
                           <p className="break-words whitespace-pre-line">{msg.conteudo}</p>
                           <p
                             className={`text-xs mt-1 flex items-center gap-1 ${isOwn ? 'text-blue-200 justify-end' : 'text-gray-500'
@@ -789,6 +876,31 @@ const ChatCorporativoContent = () => {
 
             {/* Input */}
             <div className="bg-white border-t border-gray-200 p-4">
+              {/* Anexos Pendentes */}
+              {anexosPendentes.length > 0 && (
+                <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
+                  {anexosPendentes.map((anexo, index) => (
+                    <div key={index} className="relative bg-gray-100 rounded-lg p-2 flex items-center gap-2 min-w-[150px] max-w-[200px]">
+                      {anexo.tipoMime.startsWith('image/') ? (
+                        <ImageIcon size={20} className="text-blue-500" />
+                      ) : (
+                        <FileText size={20} className="text-gray-500" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{anexo.nomeArquivo}</p>
+                        <p className="text-[10px] text-gray-500">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
+                      </div>
+                      <button
+                        onClick={() => removerAnexoPendente(index)}
+                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex items-center space-x-2 relative">
                 {/* Emoji Picker */}
                 {showEmojiPicker && (
@@ -811,6 +923,27 @@ const ChatCorporativoContent = () => {
                   <Smile size={20} className="text-gray-600" />
                 </button>
 
+                {/* File Upload Button */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  multiple
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                  disabled={!wsConnected || uploading}
+                  type="button"
+                >
+                  {uploading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  ) : (
+                    <Paperclip size={20} className="text-gray-600" />
+                  )}
+                </button>
+
                 <textarea
                   value={novaMensagem}
                   onChange={(e) => setNovaMensagem(e.target.value)}
@@ -830,7 +963,7 @@ const ChatCorporativoContent = () => {
                 />
                 <button
                   onClick={enviarMensagem}
-                  disabled={!novaMensagem.trim() || !wsConnected}
+                  disabled={(!novaMensagem.trim() && anexosPendentes.length === 0) || !wsConnected || uploading}
                   className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-full transition-colors"
                 >
                   <Send size={20} />
