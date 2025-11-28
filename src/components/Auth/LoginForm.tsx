@@ -30,8 +30,8 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl border-2 border-gray-100 p-8 w-full max-w-md">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4 transition-colors duration-200">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border-2 border-gray-100 dark:border-gray-700 p-8 w-full max-w-md">
         {/* Logo e Título */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center mb-4">

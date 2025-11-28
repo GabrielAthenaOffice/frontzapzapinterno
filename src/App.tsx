@@ -1,8 +1,9 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import { chatService, mensagemService, userService, groupService } from './services/api';
 import websocketService from './services/websocket';
 import { Chat, Mensagem, User, ChatListItem } from './types';
@@ -13,6 +14,7 @@ import Dashboard from './components/Dashboard/Dashboard';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [currentView, setCurrentView] = useState<'dashboard' | 'chat'>('dashboard');
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [chatAtivo, setChatAtivo] = useState<Chat | null>(null);
@@ -543,7 +545,7 @@ const ChatCorporativoContent = () => {
 
   console.log('✅ Usuário autenticado, mostrando chat');
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
       {/* Error Toast */}
       {error && (
         <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
@@ -557,7 +559,7 @@ const ChatCorporativoContent = () => {
       )}
 
       {/* Sidebar */}
-      <div className={`${showSidebar ? 'w-80' : 'w-0'} bg-white border-r border-gray-200 transition-all duration-300 overflow-hidden flex flex-col`}>
+      <div className={`${showSidebar ? 'w-80' : 'w-0'} bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 overflow-hidden flex flex-col`}>
         <div className="p-4 bg-blue-600 text-white">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Conversas</h2>
@@ -636,7 +638,7 @@ const ChatCorporativoContent = () => {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="p-4 border-t border-gray-200 hover:bg-red-50 text-red-600 flex items-center justify-center space-x-2 transition-colors"
+          className="p-4 border-t border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center space-x-2 transition-colors"
         >
           <LogOut size={20} />
           <span>Sair</span>
@@ -648,7 +650,7 @@ const ChatCorporativoContent = () => {
         {chatAtivo ? (
           <>
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+            <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowSidebar(!showSidebar)}
@@ -687,6 +689,15 @@ const ChatCorporativoContent = () => {
                   <ArrowLeft size={20} className="text-gray-600" />
                 </button>
 
+                {/* Dark Mode Toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  title={theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'}
+                >
+                  {theme === 'light' ? <Moon size={20} className="text-gray-600 dark:text-gray-400" /> : <Sun size={20} className="text-gray-600 dark:text-gray-400" />}
+                </button>
+
                 {/* Settings Button for Groups */}
                 {chatAtivo.tipo === 'GRUPO' && (
                   <button
@@ -696,10 +707,10 @@ const ChatCorporativoContent = () => {
                       console.log('chatAtivo.groupId:', chatAtivo.groupId);
                       setShowGroupSettings(true);
                     }}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                     title="Configurações do grupo"
                   >
-                    <Settings size={20} className="text-gray-600" />
+                    <Settings size={20} className="text-gray-600 dark:text-gray-400" />
                   </button>
                 )}
               </div>
