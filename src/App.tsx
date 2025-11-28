@@ -820,34 +820,40 @@ const ChatCorporativoContent = () => {
                           {/* Renderizar anexos */}
                           {msg.anexos && msg.anexos.length > 0 && (
                             <div className="mb-2 space-y-2">
-                              {msg.anexos.map((anexo) => (
-                                <div key={anexo.id} className={`rounded-lg overflow-hidden ${isOwn ? 'bg-blue-500' : 'bg-gray-100'}`}>
-                                  {anexo.tipoMime.startsWith('image/') ? (
-                                    <div className="relative group">
-                                      <img
-                                        src={anexo.urlPublica}
-                                        alt={anexo.nomeArquivo}
-                                        className="max-w-full h-auto max-h-60 object-cover cursor-pointer"
-                                        onClick={() => window.open(anexo.urlPublica, '_blank')}
-                                      />
-                                    </div>
-                                  ) : (
-                                    <a
-                                      href={anexo.urlPublica}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`flex items-center p-2 gap-2 hover:opacity-80 transition-opacity ${isOwn ? 'text-white' : 'text-gray-800'}`}
-                                    >
-                                      <FileText size={20} />
-                                      <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{anexo.nomeArquivo}</p>
-                                        <p className="text-xs opacity-70">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
+                              {msg.anexos.map((anexo) => {
+                                // Usar o endpoint de redirecionamento do backend para obter URL assinada
+                                // Codificar o caminho para evitar problemas com barras
+                                const fileUrl = `http://localhost:8080/api/files/view?path=${encodeURIComponent(anexo.caminhoSupabase)}`;
+
+                                return (
+                                  <div key={anexo.id} className={`rounded-lg overflow-hidden ${isOwn ? 'bg-blue-500' : 'bg-gray-100'}`}>
+                                    {anexo.tipoMime.startsWith('image/') ? (
+                                      <div className="relative group">
+                                        <img
+                                          src={fileUrl}
+                                          alt={anexo.nomeArquivo}
+                                          className="max-w-full h-auto max-h-60 object-cover cursor-pointer"
+                                          onClick={() => window.open(fileUrl, '_blank')}
+                                        />
                                       </div>
-                                      <Download size={16} />
-                                    </a>
-                                  )}
-                                </div>
-                              ))}
+                                    ) : (
+                                      <a
+                                        href={fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={`flex items-center p-2 gap-2 hover:opacity-80 transition-opacity ${isOwn ? 'text-white' : 'text-gray-800'}`}
+                                      >
+                                        <FileText size={20} />
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium truncate">{anexo.nomeArquivo}</p>
+                                          <p className="text-xs opacity-70">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
+                                        </div>
+                                        <Download size={16} />
+                                      </a>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
 
