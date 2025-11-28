@@ -421,6 +421,13 @@ const ChatCorporativoContent = () => {
       // Upload de cada arquivo selecionado
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+
+        // Validação de tamanho (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          setError(`O arquivo ${file.name} excede o limite de 10MB.`);
+          continue;
+        }
+
         const response = await fileService.uploadFile(file);
 
         if (response.success) {
