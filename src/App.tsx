@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { chatService, mensagemService, userService, groupService } from './services/api';
@@ -9,9 +9,11 @@ import { Chat, Mensagem, User, ChatListItem } from './types';
 import { formatMessageTime } from './utils/dateFormartter';
 import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
+import Dashboard from './components/Dashboard/Dashboard';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
+  const [currentView, setCurrentView] = useState<'dashboard' | 'chat'>('dashboard');
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [chatAtivo, setChatAtivo] = useState<Chat | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
@@ -48,6 +50,8 @@ const ChatCorporativoContent = () => {
   useEffect(() => {
     if (user) {
       console.log('✅ Usuário autenticado. ID:', user.id, 'Nome:', user.nome);
+      // Garantir que após login, o usuário veja o dashboard
+      setCurrentView('dashboard');
     } else if (!authLoading) {
       console.log('❌ Não autenticado, mostrando login');
     }
@@ -532,6 +536,11 @@ const ChatCorporativoContent = () => {
     return <LoginForm />;
   }
 
+  // Show Dashboard if user is authenticated and on dashboard view
+  if (currentView === 'dashboard') {
+    return <Dashboard onNavigateToChat={() => setCurrentView('chat')} />;
+  }
+
   console.log('✅ Usuário autenticado, mostrando chat');
   return (
     <div className="flex h-screen bg-gray-100">
@@ -667,21 +676,33 @@ const ChatCorporativoContent = () => {
                 </div>
               </div>
 
-              {/* Settings Button for Groups */}
-              {chatAtivo.tipo === 'GRUPO' && (
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-2">
+                {/* Back to Dashboard Button */}
                 <button
-                  onClick={() => {
-                    console.log('🔧 Clicou no botão de settings');
-                    console.log('groupIdSettings:', groupIdSettings);
-                    console.log('chatAtivo.groupId:', chatAtivo.groupId);
-                    setShowGroupSettings(true);
-                  }}
+                  onClick={() => setCurrentView('dashboard')}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  title="Configurações do grupo"
+                  title="Voltar ao Dashboard"
                 >
-                  <Settings size={20} className="text-gray-600" />
+                  <ArrowLeft size={20} className="text-gray-600" />
                 </button>
-              )}
+
+                {/* Settings Button for Groups */}
+                {chatAtivo.tipo === 'GRUPO' && (
+                  <button
+                    onClick={() => {
+                      console.log('🔧 Clicou no botão de settings');
+                      console.log('groupIdSettings:', groupIdSettings);
+                      console.log('chatAtivo.groupId:', chatAtivo.groupId);
+                      setShowGroupSettings(true);
+                    }}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    title="Configurações do grupo"
+                  >
+                    <Settings size={20} className="text-gray-600" />
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Mensagens */}

@@ -1,3 +1,4 @@
+// src/types/index.ts
 export interface User {
   id: number;
   nome: string;
@@ -43,4 +44,16 @@ export interface Notificacao {
   chatNome: string;
   conteudoResumo: string;
   enviadoEm: string; // vem como ISO do back
+}
+
+export interface Application {
+  id: string;
+  nome: string;
+  descricao: string;
+  icon: React.ReactNode;
+  tipo: 'interno' | 'externo';
+  url?: string; // Para aplicações externas
+  onAction?: () => void; // Para aplicações internas
+  status?: string;
+  statusColor?: 'green' | 'yellow' | 'red' | 'blue';
 }
