@@ -12,15 +12,11 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<Theme>(() => {
-        // Verificar localStorage ou preferência do sistema
+        // Verificar localStorage
         const savedTheme = localStorage.getItem('athena-theme') as Theme;
         if (savedTheme) return savedTheme;
 
-        // Verificar preferência do sistema
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return 'dark';
-        }
-
+        // Sempre começar em light mode por padrão
         return 'light';
     });
 
