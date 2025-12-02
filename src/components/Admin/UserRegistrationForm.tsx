@@ -92,13 +92,13 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ isOpen, onC
                             onChange={handleChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="Ex: João Silva"
+                            placeholder="Ex: Edjenes"
                         />
                     </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Email Corporativo
+                            E-mail
                         </label>
                         <input
                             type="email"
@@ -107,7 +107,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ isOpen, onC
                             onChange={handleChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="joao.silva@athena.com"
+                            placeholder="juan.carlito@athena.com"
                         />
                     </div>
 
@@ -122,7 +122,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ isOpen, onC
                             onChange={handleChange}
                             required
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                            placeholder="Ex: Desenvolvedor Frontend"
+                            placeholder="Ex: Marketing, Financeiro, Correspondência"
                         />
                     </div>
 
