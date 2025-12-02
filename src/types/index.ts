@@ -1,8 +1,11 @@
 // src/types/index.ts
+import { UserRole } from './permissions';
+
 export interface User {
   id: number;
   nome: string;
   email: string;
+  role: UserRole;
 }
 
 export interface Chat {

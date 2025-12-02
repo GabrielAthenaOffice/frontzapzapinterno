@@ -29,11 +29,19 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    const status = error.response?.status;
+    const message = error.response?.data?.message || error.message;
+
     console.error('❌ Erro na requisição:', {
       url: error.config?.url,
-      status: error.response?.status,
-      message: error.response?.data?.message || error.message
+      status: status,
+      message: message
     });
+
+    if (status === 403) {
+      console.warn('🚫 Acesso negado (403): Você não tem permissão para realizar esta ação.');
+      // Aqui poderíamos disparar um evento global ou toast se tivéssemos um sistema de notificação global
+    }
 
     // ⚠️ NÃO redirecionar automaticamente aqui
     // Deixar o componente lidar com 401/403

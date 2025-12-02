@@ -1,10 +1,14 @@
 // src/components/Dashboard/Dashboard.tsx
 import React from 'react';
-import { MessageCircle, LogOut, ExternalLink, Users, FileText, BarChart3, Moon, Sun } from 'lucide-react';
+import { MessageCircle, LogOut, ExternalLink, Users, FileText, BarChart3, Moon, Sun, UserPlus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Application } from '../../types';
+import { Permission } from '../../types/permissions';
 import ApplicationCard from './ApplicationCard';
+import RoleBadge from '../common/RoleBadge';
+import ProtectedAction from '../common/ProtectedAction';
+import UserRegistrationForm from '../Admin/UserRegistrationForm';
 
 interface DashboardProps {
     onNavigateToChat: () => void;
@@ -13,6 +17,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
+    const [showRegisterModal, setShowRegisterModal] = React.useState(false);
 
     const applications: Application[] = [
         {
@@ -99,6 +104,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                             <div className="text-right">
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.nome}</p>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">{user?.email}</p>
+                                {user?.role && (
+                                    <div className="mt-1 flex justify-end">
+                                        <RoleBadge role={user.role} size="sm" showIcon />
+                                    </div>
+                                )}
                             </div>
                             <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 
                               rounded-full flex items-center justify-center text-white font-semibold">
@@ -112,6 +122,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                             >
                                 {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                             </button>
+
+                            {/* Register User Button (Protected) */}
+                            <ProtectedAction permission={Permission.USER_CREATE}>
+                                <button
+                                    onClick={() => setShowRegisterModal(true)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-600 dark:text-gray-400"
+                                    title="Registrar Novo Usuário"
+                                >
+                                    <UserPlus size={20} />
+                                </button>
+                            </ProtectedAction>
+
                             <button
                                 onClick={handleLogout}
                                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-600 dark:text-gray-400 
@@ -151,6 +173,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                     </p>
                 </div>
             </main>
+
+            <UserRegistrationForm
+                isOpen={showRegisterModal}
+                onClose={() => setShowRegisterModal(false)}
+                onSuccess={() => {
+                    // Opcional: recarregar dados ou mostrar notificação
+                    console.log('Usuário registrado com sucesso');
+                }}
+            />
         </div>
     );
 };

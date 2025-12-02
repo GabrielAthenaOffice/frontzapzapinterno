@@ -7,10 +7,12 @@ import { useTheme } from './context/ThemeContext';
 import { chatService, mensagemService, userService, groupService, fileService } from './services/api';
 import websocketService from './services/websocket';
 import { Chat, Mensagem, User, ChatListItem, Anexo } from './types';
+import { Permission } from './types/permissions';
 import { formatMessageTime } from './utils/dateFormartter';
 import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
 import Dashboard from './components/Dashboard/Dashboard';
+import ProtectedAction from './components/common/ProtectedAction';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
@@ -360,10 +362,23 @@ const ChatCorporativoContent = () => {
 
 
 
-      if (chat.tipo === 'GRUPO' && chat.groupId) {
+      if (chat.tipo === 'GRUPO' && chat.groupId && user) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
         setGroupIdSettings(chat.groupId);
-        setIsGroupCreator(true);
+
+        // Buscar dados do grupo para verificar quem é o criador
+        try {
+          const grupoData = await groupService.buscarGrupo(chat.groupId);
+          console.log('📋 Dados do grupo:', grupoData);
+
+          // Verificar se o usuário pode gerenciar o grupo (é criador ou ADMIN)
+          const canManage = grupoData.criadoPorId === user.id || user.role === 'ADMIN';
+          setIsGroupCreator(canManage);
+          console.log('🔐 Usuário pode gerenciar grupo:', canManage);
+        } catch (error) {
+          console.error('Erro ao buscar dados do grupo:', error);
+          setIsGroupCreator(false);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
@@ -623,12 +638,17 @@ const ChatCorporativoContent = () => {
         <div className="p-4 bg-blue-600 text-white">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Conversas</h2>
-            <button
-              onClick={() => setShowNovoChat(true)}
-              className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
+            <ProtectedAction
+              permission={Permission.GROUP_CREATE}
+              disabledTooltip="Você não tem permissão para criar grupos"
             >
-              <Plus size={20} />
-            </button>
+              <button
+                onClick={() => setShowNovoChat(true)}
+                className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
+              >
+                <Plus size={20} />
+              </button>
+            </ProtectedAction>
           </div>
 
           <div className="flex items-center space-x-3">
