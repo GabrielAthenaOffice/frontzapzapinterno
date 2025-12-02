@@ -1,19 +1,11 @@
+import { UserRole } from "./permissions";
+
 // src/types/index.ts
-import { UserRole } from './permissions';
-
-export enum TipoAnexo {
-  DOCUMENTO = 'DOCUMENTO',
-  IMAGEM = 'IMAGEM',
-  AUDIO = 'AUDIO',
-  VIDEO = 'VIDEO',
-  OUTRO = 'OUTRO'
-}
-
 export interface User {
+  role: UserRole;
   id: number;
   nome: string;
   email: string;
-  role: UserRole;
 }
 
 export interface Chat {
@@ -32,8 +24,6 @@ export interface Anexo {
   tamanhoBytes: number;
   urlPublica: string;
   caminhoSupabase: string;
-  tipoAnexo?: TipoAnexo;
-  uploadedEm?: string;
 }
 
 export interface Mensagem {

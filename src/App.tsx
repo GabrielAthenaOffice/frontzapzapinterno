@@ -1,19 +1,16 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun, Paperclip, FileText, Image as ImageIcon, Download, Mic } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun, Paperclip, FileText, Image as ImageIcon, Download } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { chatService, mensagemService, userService, groupService, fileService } from './services/api';
 import websocketService from './services/websocket';
-import { Chat, Mensagem, User, ChatListItem, Anexo, TipoAnexo } from './types';
-import { Permission } from './types/permissions';
+import { Chat, Mensagem, User, ChatListItem, Anexo } from './types';
 import { formatMessageTime } from './utils/dateFormartter';
 import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
 import Dashboard from './components/Dashboard/Dashboard';
-import ProtectedAction from './components/common/ProtectedAction';
-import AudioRecorder from './components/Chat/AudioRecorder';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
@@ -36,7 +33,6 @@ const ChatCorporativoContent = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [anexosPendentes, setAnexosPendentes] = useState<Anexo[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -364,23 +360,10 @@ const ChatCorporativoContent = () => {
 
 
 
-      if (chat.tipo === 'GRUPO' && chat.groupId && user) {
+      if (chat.tipo === 'GRUPO' && chat.groupId) {
         console.log('✅ Grupo identificado com groupId:', chat.groupId);
         setGroupIdSettings(chat.groupId);
-
-        // Buscar dados do grupo para verificar quem é o criador
-        try {
-          const grupoData = await groupService.buscarGrupo(chat.groupId);
-          console.log('📋 Dados do grupo:', grupoData);
-
-          // Verificar se o usuário pode gerenciar o grupo (é criador ou ADMIN)
-          const canManage = grupoData.criadoPorId === user.id || user.role === 'ADMIN';
-          setIsGroupCreator(canManage);
-          console.log('🔐 Usuário pode gerenciar grupo:', canManage);
-        } catch (error) {
-          console.error('Erro ao buscar dados do grupo:', error);
-          setIsGroupCreator(false);
-        }
+        setIsGroupCreator(true);
       }
     } catch (error) {
       console.error('Erro ao carregar mensagens:', error);
@@ -476,48 +459,6 @@ const ChatCorporativoContent = () => {
 
   const removerAnexoPendente = (index: number) => {
     setAnexosPendentes(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleAudioReady = async (audioBlob: Blob) => {
-    setUploading(true);
-    try {
-      // Detectar extensão baseada no tipo do blob
-      const extension = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
-
-      // Criar arquivo a partir do Blob
-      const audioFile = new File(
-        [audioBlob],
-        `audio_${Date.now()}.${extension}`,
-        { type: audioBlob.type }
-      );
-
-      console.log('🎤 Enviando áudio:', audioFile.name, audioFile.type, audioFile.size);
-
-      // Upload usando o serviço existente
-      const response = await fileService.uploadFile(audioFile);
-
-      if (response.success) {
-        const novoAnexo: Anexo = {
-          id: Date.now(),
-          nomeArquivo: response.fileName,
-          tipoMime: response.mimeType,
-          tamanhoBytes: response.fileSizeBytes,
-          urlPublica: response.fileUrl,
-          caminhoSupabase: response.fileId
-        };
-
-        setAnexosPendentes(prev => [...prev, novoAnexo]);
-        setIsRecordingAudio(false);
-        console.log('✅ Áudio enviado com sucesso');
-      } else {
-        setError(`Erro ao enviar áudio: ${response.message}`);
-      }
-    } catch (error: any) {
-      console.error('Erro ao enviar áudio:', error);
-      setError('Falha ao enviar áudio');
-    } finally {
-      setUploading(false);
-    }
   };
 
 
@@ -682,17 +623,12 @@ const ChatCorporativoContent = () => {
         <div className="p-4 bg-blue-600 text-white">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Conversas</h2>
-            <ProtectedAction
-              permission={Permission.GROUP_CREATE}
-              disabledTooltip="Você não tem permissão para criar grupos"
+            <button
+              onClick={() => setShowNovoChat(true)}
+              className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
             >
-              <button
-                onClick={() => setShowNovoChat(true)}
-                className="p-2 hover:bg-blue-700 rounded-lg transition-colors"
-              >
-                <Plus size={20} />
-              </button>
-            </ProtectedAction>
+              <Plus size={20} />
+            </button>
           </div>
 
           <div className="flex items-center space-x-3">
@@ -896,14 +832,9 @@ const ChatCorporativoContent = () => {
                                 // Codificar o caminho para evitar problemas com barras
                                 const fileUrl = `http://localhost:8080/api/files/view?path=${encodeURIComponent(anexo.caminhoSupabase)}`;
 
-                                // Determinar tipo do anexo (preferir tipoAnexo do backend, fallback para mime type)
-                                const isImage = anexo.tipoAnexo === TipoAnexo.IMAGEM || anexo.tipoMime.startsWith('image/');
-                                const isAudio = anexo.tipoAnexo === TipoAnexo.AUDIO || anexo.tipoMime.startsWith('audio/');
-                                const isVideo = anexo.tipoAnexo === TipoAnexo.VIDEO || anexo.tipoMime.startsWith('video/');
-
                                 return (
                                   <div key={anexo.id} className={`rounded-lg overflow-hidden ${isOwn ? 'bg-blue-500' : 'bg-gray-100'}`}>
-                                    {isImage ? (
+                                    {anexo.tipoMime.startsWith('image/') ? (
                                       <div className="relative group">
                                         <img
                                           src={fileUrl}
@@ -911,33 +842,6 @@ const ChatCorporativoContent = () => {
                                           className="max-w-full h-auto max-h-60 object-cover cursor-pointer"
                                           onClick={() => window.open(fileUrl, '_blank')}
                                         />
-                                      </div>
-                                    ) : isAudio ? (
-                                      <div className={`p-2 ${isOwn ? 'bg-white/10' : 'bg-white'}`}>
-                                        <audio
-                                          src={fileUrl}
-                                          controls
-                                          className="w-full"
-                                          style={{
-                                            maxWidth: '300px',
-                                            height: '40px',
-                                            filter: isOwn ? 'invert(1) hue-rotate(180deg)' : 'none'
-                                          }}
-                                        />
-                                        <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
-                                          {anexo.nomeArquivo} • {(anexo.tamanhoBytes / 1024).toFixed(0)} KB
-                                        </p>
-                                      </div>
-                                    ) : isVideo ? (
-                                      <div className={`p-2 ${isOwn ? 'bg-white/10' : 'bg-white'}`}>
-                                        <video
-                                          src={fileUrl}
-                                          controls
-                                          className="max-w-full h-auto max-h-60"
-                                        />
-                                        <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
-                                          {anexo.nomeArquivo} • {(anexo.tamanhoBytes / 1024).toFixed(0)} KB
-                                        </p>
                                       </div>
                                     ) : (
                                       <a
@@ -988,43 +892,25 @@ const ChatCorporativoContent = () => {
               {/* Anexos Pendentes */}
               {anexosPendentes.length > 0 && (
                 <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
-                  {anexosPendentes.map((anexo, index) => {
-                    // Determinar tipo do anexo (preferir tipoAnexo do backend, fallback para mime type)
-                    const isImage = anexo.tipoAnexo === TipoAnexo.IMAGEM || anexo.tipoMime.startsWith('image/');
-                    const isAudio = anexo.tipoAnexo === TipoAnexo.AUDIO || anexo.tipoMime.startsWith('audio/');
-
-                    return (
-                      <div key={index} className="relative bg-gray-100 rounded-lg p-2 flex items-center gap-2 min-w-[150px] max-w-[200px]">
-                        {isImage ? (
-                          <ImageIcon size={20} className="text-blue-500" />
-                        ) : isAudio ? (
-                          <Mic size={20} className="text-purple-500" />
-                        ) : (
-                          <FileText size={20} className="text-gray-500" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium truncate">{anexo.nomeArquivo}</p>
-                          <p className="text-[10px] text-gray-500">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
-                        </div>
-                        <button
-                          onClick={() => removerAnexoPendente(index)}
-                          className="p-1 hover:bg-gray-200 rounded-full text-gray-500"
-                        >
-                          <X size={14} />
-                        </button>
+                  {anexosPendentes.map((anexo, index) => (
+                    <div key={index} className="relative bg-gray-100 rounded-lg p-2 flex items-center gap-2 min-w-[150px] max-w-[200px]">
+                      {anexo.tipoMime.startsWith('image/') ? (
+                        <ImageIcon size={20} className="text-blue-500" />
+                      ) : (
+                        <FileText size={20} className="text-gray-500" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{anexo.nomeArquivo}</p>
+                        <p className="text-[10px] text-gray-500">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Audio Recorder */}
-              {isRecordingAudio && (
-                <div className="mb-3">
-                  <AudioRecorder
-                    onAudioReady={handleAudioReady}
-                    onCancel={() => setIsRecordingAudio(false)}
-                  />
+                      <button
+                        onClick={() => removerAnexoPendente(index)}
+                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -1069,17 +955,6 @@ const ChatCorporativoContent = () => {
                   ) : (
                     <Paperclip size={20} className="text-gray-600" />
                   )}
-                </button>
-
-                {/* Audio Recording Button */}
-                <button
-                  onClick={() => setIsRecordingAudio(true)}
-                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
-                  disabled={!wsConnected || uploading || isRecordingAudio}
-                  type="button"
-                  title="Gravar áudio"
-                >
-                  <Mic size={20} className="text-gray-600" />
                 </button>
 
                 <textarea
