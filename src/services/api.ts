@@ -2,7 +2,7 @@ import axios from 'axios';
 import { LoginData, User, Chat, Mensagem, FileUploadResponse } from '../types';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080',
   withCredentials: true, // 🔑 Essencial para enviar cookies
   headers: {
     'Content-Type': 'application/json',

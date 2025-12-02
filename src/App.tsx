@@ -830,7 +830,7 @@ const ChatCorporativoContent = () => {
                               {msg.anexos.map((anexo) => {
                                 // Usar o endpoint de redirecionamento do backend para obter URL assinada
                                 // Codificar o caminho para evitar problemas com barras
-                                const fileUrl = `http://localhost:8080/api/files/view?path=${encodeURIComponent(anexo.caminhoSupabase)}`;
+                                const fileUrl = `${process.env.REACT_APP_API_URL}/api/files/view?path=${encodeURIComponent(anexo.caminhoSupabase)}`;
 
                                 return (
                                   <div key={anexo.id} className={`rounded-lg overflow-hidden ${isOwn ? 'bg-blue-500' : 'bg-gray-100'}`}>

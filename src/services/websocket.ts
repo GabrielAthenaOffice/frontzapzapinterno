@@ -14,7 +14,7 @@ class WebSocketService {
       this.client = new Client({
         webSocketFactory: () => {
           // 🔑 Configurar SockJS para enviar cookies
-          const sockJS = new SockJS('http://localhost:8080/ws', null, {
+          const sockJS = new SockJS(process.env.REACT_APP_WS_URL || 'http://localhost:8080/ws', null, {
             transport: ['websocket', 'xhr-streaming', 'xhr-polling']
           } as any);
           return sockJS;
@@ -22,7 +22,7 @@ class WebSocketService {
         reconnectDelay: 5000,
         heartbeatIncoming: 4000,
         heartbeatOutgoing: 4000,
-        
+
         onConnect: () => {
           this.connected = true;
           console.log('✅ WebSocket conectado');
@@ -119,7 +119,7 @@ class WebSocketService {
   unsubscribeFromChat(chatId: number): void {
     const destination = `/topic/chats/${chatId}`;
     const subscription = this.subscriptions.get(destination);
-    
+
     if (subscription) {
       subscription.unsubscribe();
       this.subscriptions.delete(destination);
@@ -154,7 +154,7 @@ class WebSocketService {
       this.client.deactivate();
       this.client = null;
     }
-    
+
     this.connected = false;
     console.log('👋 WebSocket desconectado');
   }
