@@ -1,6 +1,14 @@
 // src/types/index.ts
 import { UserRole } from './permissions';
 
+export enum TipoAnexo {
+  DOCUMENTO = 'DOCUMENTO',
+  IMAGEM = 'IMAGEM',
+  AUDIO = 'AUDIO',
+  VIDEO = 'VIDEO',
+  OUTRO = 'OUTRO'
+}
+
 export interface User {
   id: number;
   nome: string;
@@ -24,6 +32,8 @@ export interface Anexo {
   tamanhoBytes: number;
   urlPublica: string;
   caminhoSupabase: string;
+  tipoAnexo?: TipoAnexo;
+  uploadedEm?: string;
 }
 
 export interface Mensagem {

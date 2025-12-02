@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Mic, Square, Trash2, Send } from 'lucide-react';
 
 interface AudioRecorderProps {
@@ -16,6 +16,23 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onAudioReady, onCancel })
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     const MAX_RECORDING_TIME = 300; // 5 minutos
+
+    // Memoizar a URL do áudio para evitar recriação constante
+    const audioUrl = useMemo(() => {
+        if (audioBlob) {
+            return URL.createObjectURL(audioBlob);
+        }
+        return null;
+    }, [audioBlob]);
+
+    // Cleanup da URL quando componente desmontar ou audioBlob mudar
+    useEffect(() => {
+        return () => {
+            if (audioUrl) {
+                URL.revokeObjectURL(audioUrl);
+            }
+        };
+    }, [audioUrl]);
 
     useEffect(() => {
         return () => {
@@ -159,10 +176,10 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onAudioReady, onCancel })
             )}
 
             {/* Preview do áudio gravado */}
-            {audioBlob && !isRecording && (
+            {audioBlob && !isRecording && audioUrl && (
                 <div className="flex-1">
                     <audio
-                        src={URL.createObjectURL(audioBlob)}
+                        src={audioUrl}
                         controls
                         className="w-full h-8"
                         style={{ maxWidth: '300px' }}

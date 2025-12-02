@@ -6,7 +6,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
 import { chatService, mensagemService, userService, groupService, fileService } from './services/api';
 import websocketService from './services/websocket';
-import { Chat, Mensagem, User, ChatListItem, Anexo } from './types';
+import { Chat, Mensagem, User, ChatListItem, Anexo, TipoAnexo } from './types';
 import { Permission } from './types/permissions';
 import { formatMessageTime } from './utils/dateFormartter';
 import LoginForm from './components/Auth/LoginForm';
@@ -896,9 +896,14 @@ const ChatCorporativoContent = () => {
                                 // Codificar o caminho para evitar problemas com barras
                                 const fileUrl = `http://localhost:8080/api/files/view?path=${encodeURIComponent(anexo.caminhoSupabase)}`;
 
+                                // Determinar tipo do anexo (preferir tipoAnexo do backend, fallback para mime type)
+                                const isImage = anexo.tipoAnexo === TipoAnexo.IMAGEM || anexo.tipoMime.startsWith('image/');
+                                const isAudio = anexo.tipoAnexo === TipoAnexo.AUDIO || anexo.tipoMime.startsWith('audio/');
+                                const isVideo = anexo.tipoAnexo === TipoAnexo.VIDEO || anexo.tipoMime.startsWith('video/');
+
                                 return (
                                   <div key={anexo.id} className={`rounded-lg overflow-hidden ${isOwn ? 'bg-blue-500' : 'bg-gray-100'}`}>
-                                    {anexo.tipoMime.startsWith('image/') ? (
+                                    {isImage ? (
                                       <div className="relative group">
                                         <img
                                           src={fileUrl}
@@ -907,7 +912,7 @@ const ChatCorporativoContent = () => {
                                           onClick={() => window.open(fileUrl, '_blank')}
                                         />
                                       </div>
-                                    ) : anexo.tipoMime.startsWith('audio/') ? (
+                                    ) : isAudio ? (
                                       <div className={`p-2 ${isOwn ? 'bg-white/10' : 'bg-white'}`}>
                                         <audio
                                           src={fileUrl}
@@ -918,6 +923,17 @@ const ChatCorporativoContent = () => {
                                             height: '40px',
                                             filter: isOwn ? 'invert(1) hue-rotate(180deg)' : 'none'
                                           }}
+                                        />
+                                        <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
+                                          {anexo.nomeArquivo} • {(anexo.tamanhoBytes / 1024).toFixed(0)} KB
+                                        </p>
+                                      </div>
+                                    ) : isVideo ? (
+                                      <div className={`p-2 ${isOwn ? 'bg-white/10' : 'bg-white'}`}>
+                                        <video
+                                          src={fileUrl}
+                                          controls
+                                          className="max-w-full h-auto max-h-60"
                                         />
                                         <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
                                           {anexo.nomeArquivo} • {(anexo.tamanhoBytes / 1024).toFixed(0)} KB
@@ -972,27 +988,33 @@ const ChatCorporativoContent = () => {
               {/* Anexos Pendentes */}
               {anexosPendentes.length > 0 && (
                 <div className="flex gap-2 mb-2 overflow-x-auto pb-2">
-                  {anexosPendentes.map((anexo, index) => (
-                    <div key={index} className="relative bg-gray-100 rounded-lg p-2 flex items-center gap-2 min-w-[150px] max-w-[200px]">
-                      {anexo.tipoMime.startsWith('image/') ? (
-                        <ImageIcon size={20} className="text-blue-500" />
-                      ) : anexo.tipoMime.startsWith('audio/') ? (
-                        <Mic size={20} className="text-purple-500" />
-                      ) : (
-                        <FileText size={20} className="text-gray-500" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{anexo.nomeArquivo}</p>
-                        <p className="text-[10px] text-gray-500">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
+                  {anexosPendentes.map((anexo, index) => {
+                    // Determinar tipo do anexo (preferir tipoAnexo do backend, fallback para mime type)
+                    const isImage = anexo.tipoAnexo === TipoAnexo.IMAGEM || anexo.tipoMime.startsWith('image/');
+                    const isAudio = anexo.tipoAnexo === TipoAnexo.AUDIO || anexo.tipoMime.startsWith('audio/');
+
+                    return (
+                      <div key={index} className="relative bg-gray-100 rounded-lg p-2 flex items-center gap-2 min-w-[150px] max-w-[200px]">
+                        {isImage ? (
+                          <ImageIcon size={20} className="text-blue-500" />
+                        ) : isAudio ? (
+                          <Mic size={20} className="text-purple-500" />
+                        ) : (
+                          <FileText size={20} className="text-gray-500" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium truncate">{anexo.nomeArquivo}</p>
+                          <p className="text-[10px] text-gray-500">{(anexo.tamanhoBytes / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <button
+                          onClick={() => removerAnexoPendente(index)}
+                          className="p-1 hover:bg-gray-200 rounded-full text-gray-500"
+                        >
+                          <X size={14} />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => removerAnexoPendente(index)}
-                        className="p-1 hover:bg-gray-200 rounded-full text-gray-500"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
