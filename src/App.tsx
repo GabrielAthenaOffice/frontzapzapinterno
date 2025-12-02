@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun, Paperclip, FileText, Image as ImageIcon, Download } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun, Paperclip, FileText, Image as ImageIcon, Download, Mic } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
@@ -13,6 +13,7 @@ import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
 import Dashboard from './components/Dashboard/Dashboard';
 import ProtectedAction from './components/common/ProtectedAction';
+import AudioRecorder from './components/Chat/AudioRecorder';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
@@ -35,6 +36,7 @@ const ChatCorporativoContent = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [anexosPendentes, setAnexosPendentes] = useState<Anexo[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -476,6 +478,48 @@ const ChatCorporativoContent = () => {
     setAnexosPendentes(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleAudioReady = async (audioBlob: Blob) => {
+    setUploading(true);
+    try {
+      // Detectar extensão baseada no tipo do blob
+      const extension = audioBlob.type.includes('webm') ? 'webm' : 'mp4';
+
+      // Criar arquivo a partir do Blob
+      const audioFile = new File(
+        [audioBlob],
+        `audio_${Date.now()}.${extension}`,
+        { type: audioBlob.type }
+      );
+
+      console.log('🎤 Enviando áudio:', audioFile.name, audioFile.type, audioFile.size);
+
+      // Upload usando o serviço existente
+      const response = await fileService.uploadFile(audioFile);
+
+      if (response.success) {
+        const novoAnexo: Anexo = {
+          id: Date.now(),
+          nomeArquivo: response.fileName,
+          tipoMime: response.mimeType,
+          tamanhoBytes: response.fileSizeBytes,
+          urlPublica: response.fileUrl,
+          caminhoSupabase: response.fileId
+        };
+
+        setAnexosPendentes(prev => [...prev, novoAnexo]);
+        setIsRecordingAudio(false);
+        console.log('✅ Áudio enviado com sucesso');
+      } else {
+        setError(`Erro ao enviar áudio: ${response.message}`);
+      }
+    } catch (error: any) {
+      console.error('Erro ao enviar áudio:', error);
+      setError('Falha ao enviar áudio');
+    } finally {
+      setUploading(false);
+    }
+  };
+
 
   const enviarMensagem = () => {
     if ((!novaMensagem.trim() && anexosPendentes.length === 0) || !chatAtivo || !user) return;
@@ -863,6 +907,22 @@ const ChatCorporativoContent = () => {
                                           onClick={() => window.open(fileUrl, '_blank')}
                                         />
                                       </div>
+                                    ) : anexo.tipoMime.startsWith('audio/') ? (
+                                      <div className={`p-2 ${isOwn ? 'bg-white/10' : 'bg-white'}`}>
+                                        <audio
+                                          src={fileUrl}
+                                          controls
+                                          className="w-full"
+                                          style={{
+                                            maxWidth: '300px',
+                                            height: '40px',
+                                            filter: isOwn ? 'invert(1) hue-rotate(180deg)' : 'none'
+                                          }}
+                                        />
+                                        <p className={`text-xs mt-1 ${isOwn ? 'text-white/70' : 'text-gray-500'}`}>
+                                          {anexo.nomeArquivo} • {(anexo.tamanhoBytes / 1024).toFixed(0)} KB
+                                        </p>
+                                      </div>
                                     ) : (
                                       <a
                                         href={fileUrl}
@@ -916,6 +976,8 @@ const ChatCorporativoContent = () => {
                     <div key={index} className="relative bg-gray-100 rounded-lg p-2 flex items-center gap-2 min-w-[150px] max-w-[200px]">
                       {anexo.tipoMime.startsWith('image/') ? (
                         <ImageIcon size={20} className="text-blue-500" />
+                      ) : anexo.tipoMime.startsWith('audio/') ? (
+                        <Mic size={20} className="text-purple-500" />
                       ) : (
                         <FileText size={20} className="text-gray-500" />
                       )}
@@ -931,6 +993,16 @@ const ChatCorporativoContent = () => {
                       </button>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Audio Recorder */}
+              {isRecordingAudio && (
+                <div className="mb-3">
+                  <AudioRecorder
+                    onAudioReady={handleAudioReady}
+                    onCancel={() => setIsRecordingAudio(false)}
+                  />
                 </div>
               )}
 
@@ -975,6 +1047,17 @@ const ChatCorporativoContent = () => {
                   ) : (
                     <Paperclip size={20} className="text-gray-600" />
                   )}
+                </button>
+
+                {/* Audio Recording Button */}
+                <button
+                  onClick={() => setIsRecordingAudio(true)}
+                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                  disabled={!wsConnected || uploading || isRecordingAudio}
+                  type="button"
+                  title="Gravar áudio"
+                >
+                  <Mic size={20} className="text-gray-600" />
                 </button>
 
                 <textarea
