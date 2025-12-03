@@ -16,6 +16,8 @@ export interface Chat {
   participantes: User[];
   criadoEm: string;
   groupId?: number; // ID do grupo se for chat de grupo
+  outroUsuario?: string; // Nome do outro usuário em chat privado
+  fotoOutroUsuario?: string; // Foto do outro usuário em chat privado
 }
 
 export interface Anexo {
@@ -58,7 +60,6 @@ export interface ChatListItem extends Chat {
   horaUltimaMensagem?: string;
   ultimoConteudo?: string; // Do ChatResumoDTO
   ultimaMensagemEm?: string; // Do ChatResumoDTO
-  outroUsuario?: string; // Do ChatResumoDTO - nome do outro usuário em chat privado
   quantidadeNaoLidas?: number; // Do ChatResumoDTO - quantidade de mensagens não lidas
   groupId?: number; // Do ChatResumoDTO - ID do grupo para operações
 }

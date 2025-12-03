@@ -8,6 +8,7 @@ import { chatService, mensagemService, userService, groupService, fileService } 
 import websocketService from './services/websocket';
 import { Chat, Mensagem, User, ChatListItem, Anexo } from './types';
 import { formatMessageTime } from './utils/dateFormartter';
+import { getProfilePhotoUrl } from './utils/fileUtils';
 import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
 import Dashboard from './components/Dashboard/Dashboard';
@@ -700,8 +701,14 @@ const ChatCorporativoContent = () => {
                   }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 relative">
-                    {chat.tipo === 'GRUPO' ? (
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 relative overflow-hidden">
+                    {chat.tipo === 'PRIVADO' && chat.fotoOutroUsuario ? (
+                      <img
+                        src={getProfilePhotoUrl(chat.fotoOutroUsuario)}
+                        alt={chat.outroUsuario || chat.nome}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : chat.tipo === 'GRUPO' ? (
                       <Users size={20} />
                     ) : (
                       chat.nome.charAt(0).toUpperCase()
@@ -756,8 +763,14 @@ const ChatCorporativoContent = () => {
                   <Menu size={20} />
                 </button>
 
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                  {chatAtivo.tipo === 'GRUPO' ? (
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+                  {chatAtivo.tipo === 'PRIVADO' && chatAtivo.fotoOutroUsuario ? (
+                    <img
+                      src={getProfilePhotoUrl(chatAtivo.fotoOutroUsuario)}
+                      alt={chatAtivo.outroUsuario || chatAtivo.nome}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : chatAtivo.tipo === 'GRUPO' ? (
                     <Users size={20} />
                   ) : (
                     chatAtivo.nome.charAt(0).toUpperCase()
@@ -765,7 +778,9 @@ const ChatCorporativoContent = () => {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-gray-800">{chatAtivo.nome}</h3>
+                  <h3 className="font-semibold text-gray-800">
+                    {chatAtivo.tipo === 'PRIVADO' ? (chatAtivo.outroUsuario || chatAtivo.nome) : chatAtivo.nome}
+                  </h3>
                   <p className="text-xs text-gray-500">
                     {chatAtivo.tipo === 'GRUPO'
                       ? `${chatAtivo.participantes.length} participantes`
