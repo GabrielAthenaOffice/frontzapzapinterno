@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (data: LoginData) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (data: Partial<User> & { senha?: string }) => Promise<void>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -76,6 +77,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const refreshUser = async () => {
+    try {
+      const currentUser = await authService.getCurrentUser();
+      setUser(currentUser);
+      console.log('✅ AuthContext - User refreshed:', currentUser);
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar dados do usuário:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -84,6 +96,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         login,
         logout,
         updateUserProfile,
+        refreshUser,
         isAuthenticated: !!user
       }}
     >

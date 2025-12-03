@@ -21,6 +21,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
     const [showRegisterModal, setShowRegisterModal] = React.useState(false);
     const [showProfileModal, setShowProfileModal] = React.useState(false);
 
+    // 🐛 DEBUG: Log user data para verificar fotoPerfil
+    React.useEffect(() => {
+        console.log('👤 Dashboard - Current user:', user);
+        console.log('📸 Dashboard - FotoPerfil URL:', user?.fotoPerfil);
+    }, [user]);
+
     const applications: Application[] = [
         {
             id: 'chat',
