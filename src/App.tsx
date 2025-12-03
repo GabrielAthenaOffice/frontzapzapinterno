@@ -878,6 +878,19 @@ const ChatCorporativoContent = () => {
                                           onClick={() => window.open(fileUrl, '_blank')}
                                         />
                                       </div>
+                                    ) : anexo.tipoMime.startsWith('audio/') ? (
+                                      <div className="p-2">
+                                        <audio
+                                          src={fileUrl}
+                                          controls
+                                          className="w-full max-w-xs"
+                                          style={{ height: '40px' }}
+                                          preload="metadata"
+                                        />
+                                        <p className={`text-xs mt-1 ${isOwn ? 'text-blue-100' : 'text-gray-600'}`}>
+                                          {anexo.nomeArquivo} • {(anexo.tamanhoBytes / 1024).toFixed(1)} KB
+                                        </p>
+                                      </div>
                                     ) : (
                                       <a
                                         href={fileUrl}
