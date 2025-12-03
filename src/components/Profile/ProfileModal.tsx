@@ -18,36 +18,33 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
 
     const handleUpdate = async (data: Partial<User> & { senha?: string; file?: File }) => {
         try {
-            console.log('🔄 ProfileModal - Starting update...', data);
 
             let photoUploaded = false;
 
             // 1. Upload photo if exists
             if (data.file) {
-                console.log('📤 ProfileModal - Uploading photo...');
                 const photoResponse = await authService.uploadProfilePhoto(user.id, data.file);
-                console.log('✅ ProfileModal - Photo uploaded:', photoResponse.url);
                 photoUploaded = true;
                 delete data.file; // Remove file from data sent to updateUser
             }
 
             // 2. Update user info (if name or password changed)
             if (data.nome || data.senha) {
-                console.log('💾 ProfileModal - Updating user profile...', data);
+               
                 await updateUserProfile(data);
-                console.log('✅ ProfileModal - Profile updated successfully');
+                
             }
 
             // 3. Refresh user data from server if only photo was uploaded
             if (photoUploaded) {
-                console.log('🔄 ProfileModal - Refreshing user data...');
+                
                 await refreshUser();
             }
 
             setIsEditing(false);
         } catch (error) {
-            console.error('❌ ProfileModal - Failed to update profile', error);
             // You might want to show an error message to the user here
+            alert('Erro ao atualizar perfil. Por favor, tente novamente depois.');
         }
     };
 
