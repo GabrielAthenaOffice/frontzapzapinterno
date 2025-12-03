@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun, Paperclip, FileText, Image as ImageIcon, Download } from 'lucide-react';
+import { Send, Users, MessageCircle, LogOut, Menu, Plus, X, Settings, Smile, ArrowLeft, Moon, Sun, Paperclip, FileText, Image as ImageIcon, Download, Mic } from 'lucide-react';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { useTheme } from './context/ThemeContext';
@@ -11,6 +11,7 @@ import { formatMessageTime } from './utils/dateFormartter';
 import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
 import Dashboard from './components/Dashboard/Dashboard';
+import AudioRecorder from './components/Chat/AudioRecorder';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
@@ -33,6 +34,7 @@ const ChatCorporativoContent = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [anexosPendentes, setAnexosPendentes] = useState<Anexo[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -446,6 +448,54 @@ const ChatCorporativoContent = () => {
 
   const removerAnexoPendente = (index: number) => {
     setAnexosPendentes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAudioReady = async (audioBlob: Blob) => {
+    setShowAudioRecorder(false);
+    setUploading(true);
+
+    try {
+      // Converter Blob para File
+      const file = new File([audioBlob], "audio-message.webm", { type: audioBlob.type });
+
+      // Upload do arquivo
+      const response = await fileService.uploadFile(file);
+
+      if (response.success) {
+        const novoAnexo: Anexo = {
+          id: Date.now(),
+          nomeArquivo: response.fileName,
+          tipoMime: response.mimeType,
+          tamanhoBytes: response.fileSizeBytes,
+          urlPublica: response.fileUrl,
+          caminhoSupabase: response.fileId
+        };
+
+        // Enviar mensagem imediatamente com o áudio
+        if (chatAtivo && user) {
+          const mensagemDTO = {
+            chatId: chatAtivo.id,
+            remetenteId: user.id,
+            remetenteNome: user.nome,
+            conteudo: '', // Mensagem de áudio pode não ter texto
+            anexos: [novoAnexo]
+          };
+
+          if (wsConnected) {
+            websocketService.sendMessage(chatAtivo.id, mensagemDTO);
+          } else {
+            setError('WebSocket desconectado. O áudio não pôde ser enviado.');
+          }
+        }
+      } else {
+        setError(`Erro ao enviar áudio: ${response.message}`);
+      }
+    } catch (error) {
+      console.error('Erro no upload de áudio:', error);
+      setError('Falha ao enviar áudio');
+    } finally {
+      setUploading(false);
+    }
   };
 
 
@@ -899,74 +949,92 @@ const ChatCorporativoContent = () => {
                 </div>
               )}
 
-              <div className="flex items-center space-x-2 relative">
-                {/* Emoji Picker */}
-                {showEmojiPicker && (
-                  <div className="absolute bottom-16 left-0 z-50 emoji-picker-container">
-                    <EmojiPicker
-                      onEmojiClick={(emojiData: EmojiClickData) => {
-                        setNovaMensagem(prev => prev + emojiData.emoji);
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* Emoji Button */}
-                <button
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
-                  disabled={!wsConnected}
-                  type="button"
-                >
-                  <Smile size={20} className="text-gray-600" />
-                </button>
-
-                {/* File Upload Button */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  multiple
+              {showAudioRecorder ? (
+                <AudioRecorder
+                  onAudioReady={handleAudioReady}
+                  onCancel={() => setShowAudioRecorder(false)}
                 />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="p-3 hover:bg-gray-100 rounded-full transition-colors"
-                  disabled={!wsConnected || uploading}
-                  type="button"
-                >
-                  {uploading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  ) : (
-                    <Paperclip size={20} className="text-gray-600" />
+              ) : (
+                <div className="flex items-center space-x-2 relative">
+                  {/* Emoji Picker */}
+                  {showEmojiPicker && (
+                    <div className="absolute bottom-16 left-0 z-50 emoji-picker-container">
+                      <EmojiPicker
+                        onEmojiClick={(emojiData: EmojiClickData) => {
+                          setNovaMensagem(prev => prev + emojiData.emoji);
+                        }}
+                      />
+                    </div>
                   )}
-                </button>
 
-                <textarea
-                  value={novaMensagem}
-                  onChange={(e) => setNovaMensagem(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Enter sozinho = envia
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault(); // impede quebra de linha
-                      enviarMensagem();
-                    }
-                    // Shift+Enter = quebra de linha normal
-                  }}
-                  placeholder="Digite sua mensagem..."
-                  rows={1}
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl resize-none
+                  {/* Emoji Button */}
+                  <button
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                    disabled={!wsConnected}
+                    type="button"
+                  >
+                    <Smile size={20} className="text-gray-600" />
+                  </button>
+
+                  {/* File Upload Button */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    multiple
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                    disabled={!wsConnected || uploading}
+                    type="button"
+                  >
+                    {uploading ? (
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                    ) : (
+                      <Paperclip size={20} className="text-gray-600" />
+                    )}
+                  </button>
+
+                  {/* Botão de Áudio */}
+                  <button
+                    onClick={() => setShowAudioRecorder(true)}
+                    className="p-3 hover:bg-gray-100 rounded-full transition-colors"
+                    disabled={!wsConnected || uploading}
+                    type="button"
+                    title="Gravar áudio"
+                  >
+                    <Mic size={20} className="text-gray-600" />
+                  </button>
+
+                  <textarea
+                    value={novaMensagem}
+                    onChange={(e) => setNovaMensagem(e.target.value)}
+                    onKeyDown={(e) => {
+                      // Enter sozinho = envia
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault(); // impede quebra de linha
+                        enviarMensagem();
+                      }
+                      // Shift+Enter = quebra de linha normal
+                    }}
+                    placeholder="Digite sua mensagem..."
+                    rows={1}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-2xl resize-none
                               focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  disabled={!wsConnected}
-                />
-                <button
-                  onClick={enviarMensagem}
-                  disabled={(!novaMensagem.trim() && anexosPendentes.length === 0) || !wsConnected || uploading}
-                  className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-full transition-colors"
-                >
-                  <Send size={20} />
-                </button>
-              </div>
+                    disabled={!wsConnected}
+                  />
+                  <button
+                    onClick={enviarMensagem}
+                    disabled={(!novaMensagem.trim() && anexosPendentes.length === 0) || !wsConnected || uploading}
+                    className="p-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white rounded-full transition-colors"
+                  >
+                    <Send size={20} />
+                  </button>
+                </div>
+              )}
               {!wsConnected && (
                 <p className="text-xs text-red-500 mt-2 text-center">
                   Desconectado - Tentando reconectar...
