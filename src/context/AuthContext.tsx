@@ -25,9 +25,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser);
-      console.log('✅ Usuário autenticado:', currentUser);
     } catch (error: any) {
-      console.log('❌ Usuário não autenticado:', error.response?.status || error.message);
+
       // Garantir que o user é null se não autenticado
       setUser(null);
     } finally {
@@ -37,17 +36,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = async (data: LoginData) => {
     try {
-      console.log('🔄 Iniciando login com:', data);
+
       const user = await authService.login(data);
-      console.log('📦 Resposta do login:', user);
-      
+
+
       if (!user || !user.id) {
         throw new Error('Resposta do servidor inválida - usuário sem ID');
       }
-      
+
       setUser(user);
-      console.log('✅ Login realizado com sucesso. Usuário:', user);
-      console.log('👤 Estado user agora é:', user);
+
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Erro ao fazer login';
       console.error('❌ Erro no login:', errorMessage);
@@ -66,13 +64,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading, 
-        login, 
-        logout, 
-        isAuthenticated: !!user 
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        isAuthenticated: !!user
       }}
     >
       {children}

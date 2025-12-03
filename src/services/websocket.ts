@@ -25,8 +25,7 @@ class WebSocketService {
 
         onConnect: () => {
           this.connected = true;
-          console.log('✅ WebSocket conectado');
-          console.log('🍪 Cookies sendo enviados no WebSocket');
+
           resolve();
         },
 
@@ -43,7 +42,7 @@ class WebSocketService {
 
         onDisconnect: () => {
           this.connected = false;
-          console.log('🔌 WebSocket desconectado');
+
         }
       });
 
@@ -68,7 +67,7 @@ class WebSocketService {
     const subscription = this.client.subscribe(destination, (message) => {
       try {
         const mensagem: Mensagem = JSON.parse(message.body);
-        console.log('📩 Mensagem recebida:', mensagem);
+
         callback(mensagem);
       } catch (error) {
         console.error('Erro ao processar mensagem:', error);
@@ -76,7 +75,7 @@ class WebSocketService {
     });
 
     this.subscriptions.set(destination, subscription);
-    console.log(`🔔 Inscrito no chat ${chatId}`);
+
   }
 
   subscribeToUser(userId: number, callback: (notif: Notificacao) => void): void {
@@ -94,7 +93,7 @@ class WebSocketService {
     const subscription = this.client.subscribe(destination, (message) => {
       try {
         const notif: Notificacao = JSON.parse(message.body);
-        console.log('🔔 Notificação recebida:', notif);
+
         callback(notif);
       } catch (error) {
         console.error('Erro ao processar notificação:', error);
@@ -102,7 +101,7 @@ class WebSocketService {
     });
 
     this.subscriptions.set(destination, subscription);
-    console.log(`🔔 Inscrito em notificações do usuário ${userId}`);
+
   }
 
   unsubscribeFromUser(userId: number): void {
@@ -112,7 +111,7 @@ class WebSocketService {
     if (subscription) {
       subscription.unsubscribe();
       this.subscriptions.delete(destination);
-      console.log(`🔕 Desinscrito de notificações do usuário ${userId}`);
+
     }
   }
 
@@ -123,7 +122,7 @@ class WebSocketService {
     if (subscription) {
       subscription.unsubscribe();
       this.subscriptions.delete(destination);
-      console.log(`🔕 Desinscrito do chat ${chatId}`);
+
     }
   }
 
@@ -138,7 +137,7 @@ class WebSocketService {
         destination: `/app/chats/${chatId}/send`,
         body: JSON.stringify(mensagem)
       });
-      console.log('📤 Mensagem enviada');
+
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
     }
@@ -156,7 +155,7 @@ class WebSocketService {
     }
 
     this.connected = false;
-    console.log('👋 WebSocket desconectado');
+
   }
 
   isConnected(): boolean {

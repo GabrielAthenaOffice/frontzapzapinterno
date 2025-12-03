@@ -54,11 +54,11 @@ const ChatCorporativoContent = () => {
   // Monitorar mudanças no usuário (apenas para debug)
   useEffect(() => {
     if (user) {
-      console.log('✅ Usuário autenticado. ID:', user.id, 'Nome:', user.nome);
+
       // Garantir que após login, o usuário veja o dashboard
       setCurrentView('dashboard');
     } else if (!authLoading) {
-      console.log('❌ Não autenticado, mostrando login');
+
     }
   }, [user, authLoading]);
 
@@ -66,13 +66,13 @@ const ChatCorporativoContent = () => {
   // Conectar WebSocket quando usuário logado
   useEffect(() => {
     if (user && !wsConnectedRef.current && chats.length > 0) {
-      console.log('🔌 Tentando conectar WebSocket...');
+
       conectarWebSocket();
     }
 
     return () => {
       if (wsConnectedRef.current) {
-        console.log('🔌 Desconectando WebSocket...');
+
         websocketService.disconnect();
         wsConnectedRef.current = false;
         setWsConnected(false);
@@ -132,10 +132,10 @@ const ChatCorporativoContent = () => {
   useEffect(() => {
     if (!user || !wsConnected) return;
 
-    console.log('🔔 Inscrevendo em notificações do usuário:', user.id);
+
 
     websocketService.subscribeToUser(user.id, (notif) => {
-      console.log('🔔 Notificação recebida no front:', notif);
+
 
       // Lógica de notificação do navegador
       const shouldNotify =
@@ -152,7 +152,7 @@ const ChatCorporativoContent = () => {
         // Tocar som de notificação
         try {
           const audio = new Audio('/notification.mp3');
-          audio.play().catch(e => console.log('Erro ao tocar som:', e));
+          audio.play().catch(e => { });
         } catch (error) {
           console.error('Erro ao inicializar áudio:', error);
         }
@@ -186,7 +186,7 @@ const ChatCorporativoContent = () => {
 
     return () => {
       if (user) {
-        console.log('🔕 Desinscrevendo notificações do usuário:', user.id);
+
         websocketService.unsubscribeFromUser(user.id);
       }
     };
@@ -196,19 +196,14 @@ const ChatCorporativoContent = () => {
   useEffect(() => {
     if (!chatAtivo || !wsConnected) return;
 
-    console.log('📡 Inscrevendo no chat:', chatAtivo.id);
+
 
     websocketService.subscribeToChat(chatAtivo.id, (novaMensagem) => {
       if (!user) return;
 
       const isOwn = novaMensagem.remetenteId === user.id;
 
-      console.log('📨 Mensagem recebida no App.tsx:', novaMensagem);
-      if (novaMensagem.anexos) {
-        console.log('📎 Anexos na mensagem:', novaMensagem.anexos);
-      } else {
-        console.log('⚠️ Mensagem sem campo anexos');
-      }
+
 
       // deixa o back decidir se está lida ou não
       const mensagemComLida: Mensagem = {
@@ -259,7 +254,7 @@ const ChatCorporativoContent = () => {
 
     return () => {
       if (chatAtivo) {
-        console.log('📡 Desinscrevendo do chat:', chatAtivo.id);
+
         websocketService.unsubscribeFromChat(chatAtivo.id);
       }
     };
@@ -268,11 +263,11 @@ const ChatCorporativoContent = () => {
 
   const conectarWebSocket = async () => {
     try {
-      console.log('🔌 Conectando WebSocket...');
+
       await websocketService.connect();
       wsConnectedRef.current = true;
       setWsConnected(true);
-      console.log('✅ WebSocket conectado com sucesso');
+
     } catch (error) {
       console.error('❌ Erro ao conectar WebSocket:', error);
       setError('Erro ao conectar com o servidor de mensagens');
@@ -281,7 +276,7 @@ const ChatCorporativoContent = () => {
 
   const carregarDadosIniciais = async () => {
     try {
-      console.log('📊 Iniciando carregamento de dados iniciais...');
+
       setLoading(true);
 
       const [chatsData, usuariosData] = await Promise.all([
@@ -289,9 +284,7 @@ const ChatCorporativoContent = () => {
         userService.listarUsuarios()
       ]);
 
-      console.log('✅ Dados carregados com sucesso');
-      console.log('📝 Total de chats:', chatsData.length);
-      console.log('👥 Total de usuários:', usuariosData.length);
+
 
       const chatsComInfo: ChatListItem[] = chatsData.map(chat => ({
         ...chat,
@@ -304,13 +297,13 @@ const ChatCorporativoContent = () => {
       setChats(chatsComInfo);
       setUsuarios(usuariosData);
       setLoading(false);
-      console.log('✅ Estado atualizado');
+
     } catch (error: any) {
       console.error('❌ Erro ao carregar dados:', error);
       setLoading(false);
 
       if (error.response?.status === 401 || error.response?.status === 403) {
-        console.warn('⚠️ Sessão expirada! Fazendo logout...');
+
         await logout();
         setError('Sua sessão expirou. Por favor, faça login novamente.');
         return;
@@ -321,13 +314,7 @@ const ChatCorporativoContent = () => {
   };
 
   const selecionarChat = async (chat: Chat) => {
-    console.log('=== CHAT SELECIONADO ===');
-    console.log('chat.id:', chat.id);
-    console.log('chat.nome:', chat.nome);
-    console.log('chat.tipo:', chat.tipo);
-    console.log('chat.participantes:', chat.participantes);
-    console.log('Objeto completo do chat:', chat);
-    console.log('========================');
+
 
     setChatAtivo(chat);
     setLoading(true);
@@ -361,7 +348,7 @@ const ChatCorporativoContent = () => {
 
 
       if (chat.tipo === 'GRUPO' && chat.groupId) {
-        console.log('✅ Grupo identificado com groupId:', chat.groupId);
+
         setGroupIdSettings(chat.groupId);
         setIsGroupCreator(true);
       }
@@ -513,7 +500,7 @@ const ChatCorporativoContent = () => {
         // O backend adiciona o criador automaticamente
         const grupoData = await chatService.criarGrupoChat(nomeGrupo, usuariosSelecionados);
 
-        console.log('📦 Resposta do backend ao criar grupo:', grupoData);
+
 
         // Transformar GroupDTO em Chat
         // O backend retorna os membros do grupo, convertemos para User[]
@@ -528,7 +515,7 @@ const ChatCorporativoContent = () => {
         const chatId = grupoData.chat?.id || grupoData.chatId || grupoData.id;
         const groupId = grupoData.id;
 
-        console.log('🔍 IDs extraídos - chatId:', chatId, 'groupId:', groupId);
+
 
         novoChat = {
           id: chatId,
@@ -582,7 +569,7 @@ const ChatCorporativoContent = () => {
 
   // Mostrar tela de login se não autenticado
   if (authLoading) {
-    console.log('⏳ Autenticação carregando...');
+
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="text-center">
@@ -594,7 +581,7 @@ const ChatCorporativoContent = () => {
   }
 
   if (!user) {
-    console.log('❌ Sem usuário, mostrando LoginForm');
+
     return <LoginForm />;
   }
 
@@ -603,7 +590,7 @@ const ChatCorporativoContent = () => {
     return <Dashboard onNavigateToChat={() => setCurrentView('chat')} />;
   }
 
-  console.log('✅ Usuário autenticado, mostrando chat');
+
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
       {/* Error Toast */}
@@ -762,9 +749,7 @@ const ChatCorporativoContent = () => {
                 {chatAtivo.tipo === 'GRUPO' && (
                   <button
                     onClick={() => {
-                      console.log('🔧 Clicou no botão de settings');
-                      console.log('groupIdSettings:', groupIdSettings);
-                      console.log('chatAtivo.groupId:', chatAtivo.groupId);
+
                       setShowGroupSettings(true);
                     }}
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -1113,7 +1098,7 @@ const ChatCorporativoContent = () => {
       {/* Group Settings Modal */}
       {chatAtivo && groupIdSettings && (
         <>
-          {console.log('📋 Renderizando modal. showGroupSettings:', showGroupSettings, 'groupIdSettings:', groupIdSettings)}
+
           <GroupSettingsModal
             isOpen={showGroupSettings}
             onClose={() => setShowGroupSettings(false)}

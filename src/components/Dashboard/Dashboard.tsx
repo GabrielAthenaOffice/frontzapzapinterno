@@ -179,7 +179,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                 onClose={() => setShowRegisterModal(false)}
                 onSuccess={() => {
                     // Opcional: recarregar dados ou mostrar notificação
-                    console.log('Usuário registrado com sucesso');
+
                 }}
             />
         </div>

@@ -36,9 +36,9 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({ isOpen, onC
         setLoading(true);
 
         try {
-            console.log('📝 Registrando usuário:', formData);
+
             await authService.register(formData);
-            console.log('✅ Usuário registrado com sucesso');
+
             onSuccess();
             onClose();
             // Reset form

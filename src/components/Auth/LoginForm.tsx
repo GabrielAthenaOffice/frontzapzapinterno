@@ -15,12 +15,12 @@ const LoginForm: React.FC = () => {
     setError(null);
     setLoading(true);
 
-    console.log('🚀 Botão de login clicado com:', { email, senha });
+
 
     try {
-      console.log('⏳ Aguardando resposta do login...');
+
       await login({ email, senha });
-      console.log('✨ Login bem-sucedido! O redirecionamento deve acontecer automaticamente.');
+
     } catch (err: any) {
       console.error('💥 Erro capturado no LoginForm:', err);
       setError(err.message || 'Credenciais inválidas');
@@ -103,15 +103,6 @@ const LoginForm: React.FC = () => {
             )}
           </button>
         </form>
-
-        {/* Info de teste */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm font-medium text-blue-900 mb-2">🔐 Credenciais de teste:</p>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p><strong>Email:</strong> admin@athena.com</p>
-            <p><strong>Senha:</strong> admin123</p>
-          </div>
-        </div>
 
         {/* Footer */}
         <div className="mt-6 text-center">

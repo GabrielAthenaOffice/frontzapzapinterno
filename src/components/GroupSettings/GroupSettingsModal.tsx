@@ -44,7 +44,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
   const carregarDadosGrupo = async () => {
     try {
       setLoading(true);
-      console.log('📋 Carregando dados do grupo:', { groupId, groupName });
+
 
       // Carrega usuários disponíveis usando o groupId correto
       const [usuarios, grupoDetalhes] = await Promise.all([
@@ -52,8 +52,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
         groupService.buscarGrupo(groupId)
       ]);
 
-      console.log('✅ Usuários disponíveis carregados:', usuarios);
-      console.log('✅ Detalhes do grupo carregados:', grupoDetalhes);
+
 
       setUsuariosDisponiveis(usuarios);
       setGroupData(grupoDetalhes);
@@ -62,7 +61,7 @@ const GroupSettingsModal: React.FC<GroupSettingsModalProps> = ({
       setNewName(grupoDetalhes.nome);
       setNewDescription(grupoDetalhes.descricao || '');
 
-      console.log('✅ Dados do grupo carregados com sucesso');
+
     } catch (err) {
       console.error('Erro ao carregar dados do grupo:', err);
       setError('Erro ao carregar dados do grupo');

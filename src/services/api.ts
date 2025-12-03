@@ -12,8 +12,7 @@ const api = axios.create({
 // Interceptor para log de requisições
 api.interceptors.request.use(
   (config) => {
-    console.log('📤 Requisição:', config.method?.toUpperCase(), config.url);
-    console.log('🍪 Cookies sendo enviados:', document.cookie);
+
     return config;
   },
   (error) => {
@@ -24,8 +23,7 @@ api.interceptors.request.use(
 // Interceptor para tratar erros
 api.interceptors.response.use(
   (response) => {
-    console.log('📥 Resposta bem-sucedida:', response.status, response.config.url);
-    console.log('🍪 Cookies após resposta:', document.cookie);
+
     return response;
   },
   (error) => {
@@ -46,17 +44,14 @@ export const authService = {
   login: async (data: LoginData) => {
     const response = await api.post<any>('/auth/login', data);
 
-    console.log('📦 Resposta completa do login:', response);
-    console.log('📦 response.data:', response.data);
-    console.log('📦 response.headers:', response.headers);
-    console.log('🍪 Cookies após login:', document.cookie);
+
 
     return response.data;
   },
 
   logout: async () => {
     const response = await api.post('/auth/singout');
-    console.log('🗑️ Logout realizado');
+
     return response.data;
   },
 
