@@ -670,8 +670,16 @@ const ChatCorporativoContent = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-semibold">
-              {user.nome.charAt(0).toUpperCase()}
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center font-semibold overflow-hidden">
+              {user.fotoPerfil ? (
+                <img
+                  src={getProfilePhotoUrl(user.fotoPerfil)}
+                  alt={user.nome}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                user.nome.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="flex-1 overflow-hidden">
               <p className="font-semibold truncate">{user.nome}</p>
