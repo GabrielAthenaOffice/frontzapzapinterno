@@ -3,6 +3,7 @@ import { User } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import EditProfileForm from './EditProfileForm';
 import { authService } from '../../services/api';
+import { getProfilePhotoUrl } from '../../utils/fileUtils';
 
 interface ProfileModalProps {
     isOpen: boolean;
@@ -75,7 +76,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
                         <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-blue-500">
                             {user.fotoPerfil ? (
                                 <img
-                                    src={user.fotoPerfil}
+                                    src={getProfilePhotoUrl(user.fotoPerfil)}
                                     alt={user.nome}
                                     className="w-full h-full object-cover"
                                 />

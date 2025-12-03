@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { User } from '../../types';
+import { getProfilePhotoUrl } from '../../utils/fileUtils';
 
 interface EditProfileFormProps {
     user: User;
@@ -11,7 +12,7 @@ const EditProfileForm: React.FC<EditProfileFormProps> = ({ user, onSubmit, onCan
     const [nome, setNome] = useState(user.nome);
     const [senha, setSenha] = useState('');
     const [confirmarSenha, setConfirmarSenha] = useState('');
-    const [previewUrl, setPreviewUrl] = useState<string | null>(user.fotoPerfil || null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(getProfilePhotoUrl(user.fotoPerfil) || null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');

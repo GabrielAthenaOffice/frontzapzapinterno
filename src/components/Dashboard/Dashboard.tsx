@@ -10,6 +10,7 @@ import RoleBadge from '../common/RoleBadge';
 import ProtectedAction from '../common/ProtectedAction';
 import UserRegistrationForm from '../Admin/UserRegistrationForm';
 import ProfileModal from '../Profile/ProfileModal';
+import { getProfilePhotoUrl } from '../../utils/fileUtils';
 
 interface DashboardProps {
     onNavigateToChat: () => void;
@@ -126,7 +127,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                                 onClick={() => setShowProfileModal(true)}
                             >
                                 {user?.fotoPerfil ? (
-                                    <img src={user.fotoPerfil} alt={user.nome} className="w-full h-full object-cover" />
+                                    <img src={getProfilePhotoUrl(user.fotoPerfil)} alt={user.nome} className="w-full h-full object-cover" />
                                 ) : (
                                     user?.nome.charAt(0).toUpperCase()
                                 )}
