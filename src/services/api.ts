@@ -63,6 +63,23 @@ export const authService = {
   register: async (data: any) => {
     const response = await api.post('/auth/register', data);
     return response.data;
+  },
+
+  updateUser: async (id: number, data: Partial<User> & { senha?: string }) => {
+    const response = await api.put<User>(`/auth/${id}`, data);
+    return response.data;
+  },
+
+  uploadProfilePhoto: async (id: number, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await api.post<{ url: string }>(`/auth/${id}/photo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
   }
 };
 

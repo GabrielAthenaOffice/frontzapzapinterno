@@ -8,6 +8,7 @@ interface AuthContextType {
   loading: boolean;
   login: (data: LoginData) => Promise<void>;
   logout: () => Promise<void>;
+  updateUserProfile: (data: Partial<User> & { senha?: string }) => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -63,6 +64,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const updateUserProfile = async (data: Partial<User> & { senha?: string }) => {
+    if (!user) return;
+    try {
+      const updatedUser = await authService.updateUser(user.id, data);
+      setUser(updatedUser);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Erro ao atualizar perfil';
+      console.error('❌ Erro ao atualizar perfil:', errorMessage);
+      throw new Error(errorMessage);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -70,6 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         loading,
         login,
         logout,
+        updateUserProfile,
         isAuthenticated: !!user
       }}
     >

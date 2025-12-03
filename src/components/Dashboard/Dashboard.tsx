@@ -9,6 +9,7 @@ import ApplicationCard from './ApplicationCard';
 import RoleBadge from '../common/RoleBadge';
 import ProtectedAction from '../common/ProtectedAction';
 import UserRegistrationForm from '../Admin/UserRegistrationForm';
+import ProfileModal from '../Profile/ProfileModal';
 
 interface DashboardProps {
     onNavigateToChat: () => void;
@@ -18,6 +19,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [showRegisterModal, setShowRegisterModal] = React.useState(false);
+    const [showProfileModal, setShowProfileModal] = React.useState(false);
 
     const applications: Application[] = [
         {
@@ -46,7 +48,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
             descricao: 'Portal de correspondências',
             icon: <Users size={24} />,
             tipo: 'externo',
-            url: 'https://front-correspondencias-athena-d9yx.vercel.app/', // Substituir pelo link real
+            url: 'https://front-correspondencias-athena-d9yx.vercel.app/',
             status: 'Em Produção',
             statusColor: 'green'
         },
@@ -101,7 +103,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
 
                         {/* User Info */}
                         <div className="flex items-center space-x-4">
-                            <div className="text-right">
+                            <div
+                                className="text-right cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => setShowProfileModal(true)}
+                            >
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{user?.nome}</p>
                                 <p className="text-xs text-gray-600 dark:text-gray-400">{user?.email}</p>
                                 {user?.role && (
@@ -110,9 +115,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                                     </div>
                                 )}
                             </div>
-                            <div className="w-10 h-10 bg-blue-600 dark:bg-blue-500 
-                              rounded-full flex items-center justify-center text-white font-semibold">
-                                {user?.nome.charAt(0).toUpperCase()}
+                            <div
+                                className="w-10 h-10 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold cursor-pointer hover:opacity-80 transition-opacity overflow-hidden"
+                                onClick={() => setShowProfileModal(true)}
+                            >
+                                {user?.fotoPerfil ? (
+                                    <img src={user.fotoPerfil} alt={user.nome} className="w-full h-full object-cover" />
+                                ) : (
+                                    user?.nome.charAt(0).toUpperCase()
+                                )}
                             </div>
                             {/* Dark Mode Toggle */}
                             <button
@@ -181,6 +192,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
                     // Opcional: recarregar dados ou mostrar notificação
 
                 }}
+            />
+
+            <ProfileModal
+                isOpen={showProfileModal}
+                onClose={() => setShowProfileModal(false)}
             />
         </div>
     );

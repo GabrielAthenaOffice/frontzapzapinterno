@@ -6,6 +6,7 @@ export interface User {
   id: number;
   nome: string;
   email: string;
+  fotoPerfil?: string;
 }
 
 export interface Chat {
