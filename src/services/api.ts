@@ -44,12 +44,18 @@ export const authService = {
   login: async (data: LoginData) => {
     const response = await api.post<any>('/auth/login', data);
 
-
+    // 🔑 Salvar token JWT no localStorage para uso no fluxoApi
+    if (response.data.token) {
+      localStorage.setItem('athena-jwt-token', response.data.token);
+    }
 
     return response.data;
   },
 
   logout: async () => {
+    // 🔑 Remover token JWT do localStorage
+    localStorage.removeItem('athena-jwt-token');
+
     const response = await api.post('/auth/singout');
 
     return response.data;

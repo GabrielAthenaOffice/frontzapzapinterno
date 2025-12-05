@@ -6,11 +6,24 @@ const FLUXOS_API_URL = process.env.REACT_APP_FLUXOS_API_URL || 'https://fluxosda
 
 const fluxoApi = axios.create({
     baseURL: FLUXOS_API_URL,
-    withCredentials: true, // 🔑 Essencial para enviar cookie athenaoffice
     headers: {
         'Content-Type': 'application/json',
     },
 });
+
+// 🔑 Interceptor para adicionar token JWT no header Authorization
+fluxoApi.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('athena-jwt-token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
 // Interceptor para log de erros
 fluxoApi.interceptors.response.use(
