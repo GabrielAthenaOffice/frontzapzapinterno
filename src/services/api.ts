@@ -44,12 +44,36 @@ export const authService = {
   login: async (data: LoginData) => {
     const response = await api.post<any>('/auth/login', data);
 
-    // 🔑 Salvar token JWT no localStorage para uso no fluxoApi
-    if (response.data.token) {
-      localStorage.setItem('athena-jwt-token', response.data.token);
+    let user = response.data;
+    // 🔑 Tenta pegar token de 'token' ou 'jwt'
+    let token = response.data.token || response.data.jwt;
+
+    // 🛠️ Tratamento para nova estrutura de resposta: { userDTO: ..., cookie: ... }
+    if (response.data.userDTO) {
+      user = response.data.userDTO;
+
+      // Tentar extrair token da string do cookie se não vier explícito
+      if (!token && response.data.cookie) {
+        try {
+          // Formato esperado: "nome=valor; Path=/; ..."
+          const cookieString = response.data.cookie;
+          const firstPart = cookieString.split(';')[0]; // Pega "nome=valor"
+          const separatorIndex = firstPart.indexOf('=');
+          if (separatorIndex > 0) {
+            token = firstPart.substring(separatorIndex + 1);
+          }
+        } catch (e) {
+          console.error('Erro ao extrair token do cookie:', e);
+        }
+      }
     }
 
-    return response.data;
+    // 🔑 Salvar token JWT no localStorage para uso no fluxoApi
+    if (token) {
+      localStorage.setItem('athena-jwt-token', token);
+    }
+
+    return user;
   },
 
   logout: async () => {
