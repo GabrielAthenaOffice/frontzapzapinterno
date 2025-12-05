@@ -41,16 +41,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat, onNavigateToFlu
             statusColor: 'green'
         },
         {
-            id: 'fluxos',
-            nome: 'Fluxos de Processos',
-            descricao: 'Visualize e gerencie fluxos de processos do Bizagi',
-            icon: <FileText size={24} />,
-            tipo: 'interno',
-            onAction: onNavigateToFluxos,
-            status: 'Online',
-            statusColor: 'green'
-        },
-        {
             id: 'app-athena',
             nome: 'App Athena',
             descricao: 'Aplicação principal para atividades comerciais',
@@ -89,6 +79,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat, onNavigateToFlu
             url: '#', // Substituir pelo link real
             status: 'Beta',
             statusColor: 'yellow'
+        },
+        {
+            id: 'fluxos',
+            nome: 'Fluxos de Processos',
+            descricao: 'Visualize e gerencie fluxos de processos do Bizagi',
+            icon: <FileText size={24} />,
+            tipo: 'interno',
+            onAction: onNavigateToFluxos,
+            status: 'Online',
+            statusColor: 'green'
         }
     ];
 
