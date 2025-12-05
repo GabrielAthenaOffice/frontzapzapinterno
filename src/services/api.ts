@@ -70,7 +70,11 @@ export const authService = {
 
     // 🔑 Salvar token JWT no localStorage para uso no fluxoApi
     if (token) {
+      console.log('✅ [Login] Token JWT extraído e salvo com sucesso.');
       localStorage.setItem('athena-jwt-token', token);
+    } else {
+      console.warn('⚠️ [Login] Token JWT não encontrado na resposta!');
+      console.log('🔍 [Login] Resposta completa:', response.data);
     }
 
     return user;
