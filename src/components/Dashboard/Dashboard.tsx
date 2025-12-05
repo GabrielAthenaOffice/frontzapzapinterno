@@ -14,9 +14,10 @@ import { getProfilePhotoUrl } from '../../utils/fileUtils';
 
 interface DashboardProps {
     onNavigateToChat: () => void;
+    onNavigateToFluxos: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat, onNavigateToFluxos }) => {
     const { user, logout } = useAuth();
     const { theme, toggleTheme } = useTheme();
     const [showRegisterModal, setShowRegisterModal] = React.useState(false);
@@ -36,6 +37,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigateToChat }) => {
             icon: <MessageCircle size={24} />,
             tipo: 'interno',
             onAction: onNavigateToChat,
+            status: 'Online',
+            statusColor: 'green'
+        },
+        {
+            id: 'fluxos',
+            nome: 'Fluxos de Processos',
+            descricao: 'Visualize e gerencie fluxos de processos do Bizagi',
+            icon: <FileText size={24} />,
+            tipo: 'interno',
+            onAction: onNavigateToFluxos,
             status: 'Online',
             statusColor: 'green'
         },

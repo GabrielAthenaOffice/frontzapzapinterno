@@ -13,11 +13,16 @@ import LoginForm from './components/Auth/LoginForm';
 import GroupSettingsModal from './components/GroupSettings/GroupSettingsModal';
 import Dashboard from './components/Dashboard/Dashboard';
 import AudioRecorder from './components/Chat/AudioRecorder';
+// Fluxos Pages
+import FluxosDashboard from './pages/Fluxos/FluxosDashboard';
+import FluxoView from './pages/Fluxos/FluxoView';
+import PublicarFluxo from './pages/Fluxos/PublicarFluxo';
 
 const ChatCorporativoContent = () => {
   const { user, logout, loading: authLoading } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'chat'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'chat' | 'fluxos' | 'fluxo-view' | 'publicar-fluxo'>('dashboard');
+  const [selectedFluxoId, setSelectedFluxoId] = useState<number | null>(null);
   const [chats, setChats] = useState<ChatListItem[]>([]);
   const [chatAtivo, setChatAtivo] = useState<Chat | null>(null);
   const [mensagens, setMensagens] = useState<Mensagem[]>([]);
@@ -638,7 +643,44 @@ const ChatCorporativoContent = () => {
 
   // Show Dashboard if user is authenticated and on dashboard view
   if (currentView === 'dashboard') {
-    return <Dashboard onNavigateToChat={() => setCurrentView('chat')} />;
+    return (
+      <Dashboard
+        onNavigateToChat={() => setCurrentView('chat')}
+        onNavigateToFluxos={() => setCurrentView('fluxos')}
+      />
+    );
+  }
+
+  // Fluxos views
+  if (currentView === 'fluxos') {
+    return (
+      <FluxosDashboard
+        onNavigateToFluxo={(id) => {
+          setSelectedFluxoId(id);
+          setCurrentView('fluxo-view');
+        }}
+        onNavigateToPublicar={() => setCurrentView('publicar-fluxo')}
+        onVoltar={() => setCurrentView('dashboard')}
+      />
+    );
+  }
+
+  if (currentView === 'fluxo-view' && selectedFluxoId) {
+    return (
+      <FluxoView
+        fluxoId={selectedFluxoId}
+        onVoltar={() => setCurrentView('fluxos')}
+      />
+    );
+  }
+
+  if (currentView === 'publicar-fluxo') {
+    return (
+      <PublicarFluxo
+        onVoltar={() => setCurrentView('fluxos')}
+        onSuccess={() => setCurrentView('fluxos')}
+      />
+    );
   }
 
 
