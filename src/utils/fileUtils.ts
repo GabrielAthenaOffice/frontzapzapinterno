@@ -18,6 +18,6 @@ export const getProfilePhotoUrl = (fotoPerfil: string | undefined): string | und
     }
 
     // Otherwise, generate URL via backend endpoint that creates signed URLs
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    const apiUrl = process.env.REACT_APP_API_URL;
     return `${apiUrl}/api/files/view?path=${encodeURIComponent(fotoPerfil)}`;
 };

@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { Fluxo, FluxoCreateDTO, PageResponse, Arquivo, Setor } from '../types/fluxos';
 
 // API de Fluxos - Backend separado
-const FLUXOS_API_URL = 'https://fluxosdaathenaoffice.render.com';
+const FLUXOS_API_URL = process.env.REACT_APP_FLUXOS_API_URL || 'https://fluxosdaathenaoffice.onrender.com';
 
 const fluxoApi = axios.create({
     baseURL: FLUXOS_API_URL,
