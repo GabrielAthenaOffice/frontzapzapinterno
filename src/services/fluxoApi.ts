@@ -90,11 +90,7 @@ export const fluxoService = {
             formData.append('arquivo', arquivo);
         }
 
-        const response = await fluxoApi.post('/api/fluxos', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await fluxoApi.post('/api/fluxos', formData);
         return response.data;
     },
 
@@ -112,9 +108,6 @@ export const fluxoService = {
         formData.append('arquivo', arquivo);
 
         const response = await fluxoApi.post(`/api/fluxos/${id}/versoes`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
             params: { observacoes },
         });
         return response.data;
