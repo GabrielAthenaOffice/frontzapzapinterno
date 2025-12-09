@@ -16,9 +16,10 @@ const fluxoApi = axios.create({
 fluxoApi.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('athena-jwt-token');
-        console.log('🔍 [FluxoApi] Tentando autenticar...');
+        console.log(`🔍 [FluxoApi] Request para: ${config.baseURL}${config.url}`);
+
         if (token) {
-            console.log('✅ [FluxoApi] Token encontrado, adicionando ao header.');
+            console.log('✅ [FluxoApi] Token encontrado. Inicio:', token.substring(0, 10) + '...');
             config.headers.Authorization = `Bearer ${token}`;
         } else {
             console.warn('⚠️ [FluxoApi] Nenhum token encontrado no localStorage!');
@@ -37,7 +38,9 @@ fluxoApi.interceptors.response.use(
         console.error('❌ Erro na API de Fluxos:', {
             url: error.config?.url,
             status: error.response?.status,
-            message: error.response?.data?.message || error.message
+            message: error.response?.data?.message || error.message,
+            data: error.response?.data,
+            headers: error.response?.headers
         });
         return Promise.reject(error);
     }
