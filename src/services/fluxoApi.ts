@@ -12,6 +12,15 @@ const fluxoApi = axios.create({
     },
 });
 
+// Função auxiliar para decodificar JWT manualmente sem bibliotecas extras
+const parseJwt = (token: string) => {
+    try {
+        return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+        return null;
+    }
+};
+
 // 🔑 Interceptor para adicionar token JWT no header Authorization
 fluxoApi.interceptors.request.use(
     (config) => {
@@ -20,6 +29,11 @@ fluxoApi.interceptors.request.use(
 
         if (token) {
             console.log('✅ [FluxoApi] Token encontrado. Inicio:', token.substring(0, 10) + '...');
+
+            // Log do payload para debug
+            const payload = parseJwt(token);
+            console.log('🔍 [FluxoApi] Payload do Token:', payload);
+
             config.headers.Authorization = `Bearer ${token}`;
         } else {
             console.warn('⚠️ [FluxoApi] Nenhum token encontrado no localStorage!');
