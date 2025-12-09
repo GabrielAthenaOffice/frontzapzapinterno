@@ -118,7 +118,15 @@ export const fluxoService = {
     // URL para visualização do fluxo
     getVisualizarUrl: (id: number, versao?: number): string => {
         const baseUrl = `${FLUXOS_API_URL}/api/fluxos/${id}/visualizar`;
-        return versao ? `${baseUrl}?versao=${versao}` : baseUrl;
+        const token = localStorage.getItem('athena-jwt-token');
+
+        let url = versao ? `${baseUrl}?versao=${versao}` : baseUrl;
+
+        if (token) {
+            url += (url.includes('?') ? '&' : '?') + `token=${token}`;
+        }
+
+        return url;
     },
 };
 
