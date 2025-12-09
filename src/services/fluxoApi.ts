@@ -7,9 +7,6 @@ const FLUXOS_API_URL = process.env.REACT_APP_FLUXOS_API_URL || 'https://fluxosda
 const fluxoApi = axios.create({
     baseURL: FLUXOS_API_URL,
     withCredentials: true,
-    headers: {
-        'Content-Type': 'application/json',
-    },
 });
 
 // Função auxiliar para decodificar JWT manualmente sem bibliotecas extras
