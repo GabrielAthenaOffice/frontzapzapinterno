@@ -751,21 +751,24 @@ const ChatCorporativoContent = () => {
                   }`}
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0 relative overflow-hidden">
-                    {chat.tipo === 'PRIVADO' && chat.fotoOutroUsuario ? (
-                      <img
-                        src={getProfilePhotoUrl(chat.fotoOutroUsuario)}
-                        alt={chat.outroUsuario || chat.nome}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : chat.tipo === 'GRUPO' ? (
-                      <Users size={20} />
-                    ) : (
-                      chat.nome.charAt(0).toUpperCase()
-                    )}
-                    {/* Badge de não lidas */}
+                  {/* Wrapper com relative para posicionar o badge */}
+                  <div className="relative flex-shrink-0">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold overflow-hidden">
+                      {chat.tipo === 'PRIVADO' && chat.fotoOutroUsuario ? (
+                        <img
+                          src={getProfilePhotoUrl(chat.fotoOutroUsuario)}
+                          alt={chat.outroUsuario || chat.nome}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : chat.tipo === 'GRUPO' ? (
+                        <Users size={20} />
+                      ) : (
+                        chat.nome.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    {/* Badge de não lidas - agora fora do avatar */}
                     {chat.quantidadeNaoLidas && chat.quantidadeNaoLidas > 0 && (
-                      <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-sm border-2 border-white">
                         {chat.quantidadeNaoLidas > 99 ? '99+' : chat.quantidadeNaoLidas}
                       </div>
                     )}
