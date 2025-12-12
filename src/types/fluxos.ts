@@ -20,6 +20,7 @@ export interface Fluxo {
   tags: string[];
   criadoEm: string;
   atualizadoEm: string;
+  documentoUrl?: string; // URL assinada do documento principal
 }
 
 export type StatusFluxo = 'RASCUNHO' | 'PUBLICADO' | 'ARQUIVADO';
