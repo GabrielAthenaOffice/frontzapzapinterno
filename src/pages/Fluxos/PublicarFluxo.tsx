@@ -218,12 +218,11 @@ const PublicarFluxo: React.FC<PublicarFluxoProps> = ({ onVoltar, onSuccess }) =>
                     {/* Upload de Arquivo */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">
-                            Arquivo ZIP do Bizagi
+                            Documento
                         </label>
                         <FileUpload
                             onFileSelect={setArquivo}
-                            accept=".zip"
-                            maxSize={100}
+                            maxSize={50}
                         />
                     </div>
 

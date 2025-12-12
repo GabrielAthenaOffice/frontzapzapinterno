@@ -7,7 +7,7 @@ interface FileUploadProps {
     maxSize?: number; // em MB
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, accept = '.zip', maxSize = 100 }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, accept, maxSize = 50 }) => {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -22,10 +22,14 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, accept = '.zip', 
             return;
         }
 
-        // Validar tipo
-        if (accept && !file.name.endsWith('.zip')) {
-            setError('Formato inválido. Envie um arquivo .zip');
-            return;
+        // Validar tipo (se especificado)
+        if (accept) {
+            const extensions = accept.split(',').map(ext => ext.trim().toLowerCase());
+            const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+            if (!extensions.includes(fileExt)) {
+                setError(`Formato inválido. Formatos aceitos: ${accept}`);
+                return;
+            }
         }
 
         setSelectedFile(file);
@@ -109,7 +113,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, accept = '.zip', 
 
                         <div>
                             <p className="text-gray-700 dark:text-slate-200 font-medium">
-                                Arraste o arquivo ZIP aqui
+                                Arraste o documento aqui
                             </p>
                             <p className="text-sm text-gray-500 dark:text-slate-500 mt-1">
                                 ou clique para selecionar (máx. {maxSize}MB)
